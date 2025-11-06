@@ -23,7 +23,7 @@ class AssertSolver:
                 return child
         return None
 
-    def solve(self):
+    def solve(self):  # create object to keep the result
         """Parse all asserts, translate to Z3, and add them to the solver."""
         for assert_node in self.assert_nodes:
             expr_node = self._extract_expression_node(assert_node)
@@ -37,9 +37,15 @@ class AssertSolver:
         result = self.solver.check()
         model = self.solver.model() if f"{result}" == "sat" else None
 
+        # TODO add all other classifications
+        # if result == NOSAT            => contradiction
+        # if simplifying left == right  => tautology
+        # if result == True             => self implied
+
         return {
             "status": result,
             "variables": self.variables,
             "solver": self.solver,
             "model": model,
+            # add "classification"
         }
