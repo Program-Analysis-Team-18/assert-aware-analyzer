@@ -335,6 +335,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         2. If type is present, returns a value of that type to invoker.
         3. If type is None (void return), returns no value.
         """
+        pc = frame.pc
         state.frames.pop()
         if state.frames:
             new_frame = state.frames.peek()
@@ -348,7 +349,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
             new_frame.pc += 1
             return state
-        return InterpretationResult("ok", 0)
+        return InterpretationResult("ok", pc.offset)
 
     def _new(classname: jvm.ClassName):
         match classname.name:
@@ -548,7 +549,6 @@ def interpret(method, inputs, verbose=False) -> (str, int):
     initial_frame, heap = generate_initial_frame(mid, minput)
     state = State(heap, Stack.empty().push(initial_frame))
 
-    pc = -1
     for _ in range(100000):
         state = step(state, bc)
         if isinstance(state, InterpretationResult):
