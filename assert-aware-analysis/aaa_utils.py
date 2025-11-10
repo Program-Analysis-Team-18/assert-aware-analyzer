@@ -94,7 +94,7 @@ class AAAMap:
         {
           "absolute_start_line" : Point,
           "absolute_end_line" : Point,
-          "assert_": "{tree_sitter_object_defining_assertion}",
+          "assert_": "{custom_assertion_type}",
           "classification": "undefined | side_effects | tautological | incorrect | logically_implied | useless | useful"
         },
         "..." // other assertions
