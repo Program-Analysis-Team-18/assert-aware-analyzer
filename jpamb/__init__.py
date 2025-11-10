@@ -23,6 +23,8 @@ def getmethodid(
 
     return parse_methodid(mid)
 
+def getcasefromparams(mid, i) -> tuple[jvm.AbsMethodID, Input]:
+        return parse_methodid(mid), parse_input(i)
 
 def getcase() -> tuple[jvm.AbsMethodID, Input]:
     """Get the case from the program arguments."""

@@ -23,3 +23,6 @@ build/
 .jpamb-stepwise
 .hypothesis
 leananalyzer
+
+target
+decompiled

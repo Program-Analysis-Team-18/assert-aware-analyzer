@@ -9,6 +9,7 @@ Sample execution:
 - `uv run jpamb interpret --stepwise --filter Simple.divideByN: solutions/interpreter.py`
 """
 import sys
+from pathlib import Path
 
 from dataclasses import dataclass
 
@@ -35,6 +36,13 @@ def wrap_value(value: any) -> jvm.Value:
             return jvm.Value.boolean(False)
         case _:
             raise TypeError(f"Do not know how to wrap {value!r}")
+
+
+@dataclass
+class InterpretationResult:
+    def __init__(self, message: str, depth):
+        self.depth = depth
+        self.message = message
 
 
 @dataclass
@@ -170,7 +178,7 @@ class State:
     frames: Stack[Frame]
 
 
-def step(state: State, bytecode: Bytecode) -> State | str:
+def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
     """
     Stepping function:
     bc ⊢ ⟨η,μ⟩ → ⟨η‾,μ‾⟩
@@ -218,7 +226,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         assert v1.type is jvm.Int(), f"expected int, but got {v1}"
         assert v2.type is jvm.Int(), f"expected int, but got {v2}"
         if v2.value == 0:
-            return "divide by zero"
+            return InterpretationResult("divide by zero", frame.pc.offset)
         frame.stack.push(jvm.Value.int(v1.value // v2.value))
         frame.pc += 1
         return state
@@ -232,7 +240,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         assert v1.type is jvm.Int(), f"expected int, but got {v1}"
         assert v2.type is jvm.Int(), f"expected int, but got {v2}"
         if v2.value == 0:
-            return "divide by zero"
+            return InterpretationResult("divide by zero", frame.pc.offset)
         vv1, vv2 = v1.value, v2.value
         frame.stack.push(jvm.Value.int(vv1 - (vv1 // vv2) * vv2))
         frame.pc += 1
@@ -340,12 +348,12 @@ def step(state: State, bytecode: Bytecode) -> State | str:
 
             new_frame.pc += 1
             return state
-        return "ok"
+        return InterpretationResult("ok", 0)
 
     def _new(classname: jvm.ClassName):
         match classname.name:
             case 'java/lang/AssertionError':
-                return 'assertion error'
+                return InterpretationResult('assertion error', frame.pc.offset)
             case _:
                 raise NotImplementedError(f"Unknown classname: {classname!r}")
 
@@ -376,7 +384,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         value, index, ref = frame.stack.pop(), frame.stack.pop(), frame.stack.pop()
 
         if ref.value is None:
-            return 'null pointer'
+            return InterpretationResult('null pointer', frame.pc.offset)
 
         assert ref.type is jvm.Int(), f'Array ref type mismatch {ref!r}'
         assert index.type is jvm.Int(), f'Index type mismatch {index.type}'
@@ -385,9 +393,13 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         old_array = state.heap[ref.value]
 
         if index.value >= len(old_array.value):
-            return 'out of bounds'
+            return InterpretationResult('out of bounds', frame.pc.offset)
 
         new_array = list(old_array.value)
+
+        if(index.value < 0):
+            return InterpretationResult("negative array size", frame.pc.offset)
+
         new_array[index.value] = value.value
 
         state.heap[ref.value] = jvm.Value.array(array_type, new_array)
@@ -403,7 +415,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
 
         array = list(state.heap[ref.value].value)
         if index.value >= len(array):
-            return 'out of bounds'
+            return InterpretationResult('out of bounds', frame.pc.offset)
 
         value = array[index.value]
 
@@ -433,7 +445,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         ref = frame.stack.pop()
 
         if ref.value is None:
-            return 'null pointer'
+            return InterpretationResult('null pointer', frame.pc.offset)
 
         array = state.heap[ref.value]
         length = len(array.value)
@@ -528,19 +540,34 @@ def generate_initial_frame(method_id: jvm.AbsMethodID, method_input: Input) -> t
     logger.debug(f"Heap {heap}")
     return initial_frame, heap
 
+def interpret(method, inputs, verbose=False) -> (str, int):
+    if not verbose:
+        logger.remove()
+    mid, minput = jpamb.getcasefromparams(method, inputs)
+    bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
+    initial_frame, heap = generate_initial_frame(mid, minput)
+    state = State(heap, Stack.empty().push(initial_frame))
+
+    pc = -1
+    for _ in range(100000):
+        state = step(state, bc)
+        if isinstance(state, InterpretationResult):
+            return state
+    else:
+        return InterpretationResult("timeout", state.frames.peek().pc.offset)
 
 if __name__ == "__main__":
     configure_logger()
 
     mid, minput = jpamb.getcase()
-    bc = Bytecode(jpamb.Suite(), {})
+    bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
     initial_frame, heap = generate_initial_frame(mid, minput)
     state = State(heap, Stack.empty().push(initial_frame))
 
-    for x in range(100000):
+    for _ in range(100000):
         state = step(state, bc)
-        if isinstance(state, str):
-            print(state)
+        if isinstance(state, InterpretationResult):
+            print(f"{state.message}:{state.depth}")
             break
     else:
         print("*")
