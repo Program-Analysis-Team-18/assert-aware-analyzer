@@ -158,7 +158,7 @@ class Fuzzer:
 
 
     def serialized_size_in_bytes(self, x):
-        #fuzzing
+        #fuzzer
         if isinstance(x, list):
             # Byte structure: "[" + items + "]"
             size = 2  # for "[" and "]"
