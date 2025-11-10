@@ -2,6 +2,7 @@
 import logging
 import tree_sitter
 import tree_sitter_java
+from tree_sitter import Point, Node
 import jpamb
 import sys
 from jpamb import model
@@ -9,8 +10,16 @@ from pathlib import Path
 
 import inspect
 
+#Import aaa_utils 
+try:
+    from aaa_utils import MAP_PATH, Parameter, Assertion, AAAMethod, AAAClass, AAAMap, AssertionNodeInfo
+except Exception:
+    repo_root = Path(__file__).resolve().parents[1]  # parent of static-analysis folder
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from aaa_utils import MAP_PATH, Parameter, Assertion, AAAMethod, AAAClass, AAAMap, AssertionNodeInfo
 
-def get_method_data(methodid: jpamb.jvm.AbsMethodID): 
+def get_method_data(methodid: jpamb.jvm.AbsMethodID):
     global log
     srcfile = suite.sourcefile(methodid.classname)
     method_class = methodid.classname
@@ -29,7 +38,7 @@ def get_method_data(methodid: jpamb.jvm.AbsMethodID):
     )
     
     for node in tree_sitter.QueryCursor(class_q).captures(tree.root_node)["class"]:
-        # print(node)
+        return AssertionNodeInfo(node.start_byte, node.end_byte, methodid)   
         break
     else:
         log.error(f"could not find a class of name {method_class.name} in {srcfile}")
@@ -95,8 +104,10 @@ if __name__ == "__main__":
     for methodid, correct in suite.case_methods():        
         
         #add all these json to their class
-        method_json = get_method_data(methodid)
+        method = get_method_data(methodid)
         
+        
+                
         break 
         
 
