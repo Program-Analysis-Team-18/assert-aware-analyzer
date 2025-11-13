@@ -400,6 +400,12 @@ $ nix develop --command uv run mvn -e compile
 ```
 It essentially skips the run made my jpamb build and manually runs maven to compile the java code and will display any errors that may have occurred during compilation.
 
+## Running inetrpreter with obejct as an input to the function
+This is an example of using our interpreter with method that takes object as an input parameter
+
+```shell
+$ uv run solutions/interpreter.py "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger;)V" "(new jpamb/cases/PositiveInteger(5))"
+```
 
 
 

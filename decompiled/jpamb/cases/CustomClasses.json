@@ -63,7 +63,7 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 8,
+            "line": 7,
             "offset": 0
           }
         ],
@@ -155,11 +155,11 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 12,
+            "line": 11,
             "offset": 0
           },
           {
-            "line": 13,
+            "line": 12,
             "offset": 6
           }
         ],
@@ -250,11 +250,11 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 17,
+            "line": 16,
             "offset": 0
           },
           {
-            "line": 20,
+            "line": 19,
             "offset": 5
           }
         ],
@@ -271,65 +271,6 @@
           "type": {
             "annotations": [],
             "base": "int"
-          },
-          "visible": true
-        }
-      ],
-      "returns": {
-        "annotations": [],
-        "type": null
-      },
-      "typeparams": []
-    },
-    {
-      "access": [
-        "public",
-        "static"
-      ],
-      "annotations": [
-        {
-          "is_runtime_visible": true,
-          "type": "jpamb/utils/Case",
-          "values": {
-            "value": {
-              "type": "string",
-              "value": "(new jpamb/cases/BooleanTrue(true)) -> ok"
-            }
-          }
-        }
-      ],
-      "code": {
-        "annotations": [],
-        "bytecode": [
-          {
-            "offset": 0,
-            "opr": "return",
-            "type": null
-          }
-        ],
-        "exceptions": [],
-        "lines": [
-          {
-            "line": 27,
-            "offset": 0
-          }
-        ],
-        "max_locals": 1,
-        "max_stack": 0,
-        "stack_map": null
-      },
-      "default": null,
-      "exceptions": [],
-      "name": "WithdrawBooleanTrue",
-      "params": [
-        {
-          "annotations": [],
-          "type": {
-            "annotations": [],
-            "args": [],
-            "inner": null,
-            "kind": "class",
-            "name": "jpamb/cases/BooleanTrue"
           },
           "visible": true
         }
@@ -507,15 +448,15 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 33,
+            "line": 25,
             "offset": 0
           },
           {
-            "line": 41,
+            "line": 33,
             "offset": 5
           },
           {
-            "line": 48,
+            "line": 40,
             "offset": 17
           }
         ],
@@ -638,7 +579,7 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 8,
+            "line": 7,
             "offset": 0
           }
         ],

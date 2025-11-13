@@ -679,8 +679,6 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, byte
     heap = {}
     state = State(heap, Stack.empty().push(initial_frame))
 
-    #uv run solutions/interpreter.py "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger;)V" "(new jpamb/cases/PositiveInteger(5))"
-
     for index, value in enumerate(method_input.values):
         # match value:
         #     case jvm.Value(type=jvm.Boolean(), value=value):
