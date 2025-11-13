@@ -3,6 +3,7 @@ package jpamb.cases;
 import jpamb.utils.Case;
 
 import jpamb.cases.PositiveInteger;
+import jpamb.cases.ArrayInputClass;
 
 public class CustomClasses {
 
@@ -13,16 +14,26 @@ public class CustomClasses {
 
     @Case("(5) -> ok")
     public static void WithdrawInt(int i) {
-        PositiveInteger amount = new PositiveInteger(i, 0);
+        PositiveInteger amount = new PositiveInteger(i);
 
         // int a = 2;
+        return;
+    }
+
+    @Case("(new jpamb/cases/ArrayInputClass(1,2,3)) -> ok")
+    public static void TestArrayInput(ArrayInputClass arrClass) {
+
+
         return;
     }
 
     @Case("(new jpamb/cases/PositiveInteger(5)) -> ok")
     public static void Withdraw(PositiveInteger amount) {
 
-        PositiveInteger balance = new PositiveInteger(1000, 0);
+        PositiveInteger balance = new PositiveInteger(1000);
+        // int[] arr = {1,2,3};
+        // ArrayInputClass arrClass = new ArrayInputClass(arr);
+
 
         // int new_value = amount.get();
         // int a = 2;

@@ -474,16 +474,43 @@ def step(state: State, bytecode: Bytecode) -> State | str:
                     if f.get("static", False):
                         continue
                     
+                    input_array = False
                     field_name = f["name"]
-                    field_type = f["type"]["base"]
+                    field_type = None
+
+                    #f["type"]["kind"]["array"]
+                    if "kind" in f["type"]:
+                        if "array" in f["type"]["kind"]:
+                            input_array = True
+                            field_type = f["type"]["type"]["base"]
+                        else:
+                            raise ValueError("Unknown json configuration")
+                    else:
+                        field_type = f["type"]["base"]
                     
-                    match field_type:
-                        case "int":
-                            instance_fields[field_name] = jvm.Value.int(0)
-                        case "boolean":
-                            instance_fields[field_name] = jvm.Value.boolean(False)
-                        case _:
-                            instance_fields[field_name] = jvm.Value(jvm.Reference(), None)
+                    if not input_array:
+                        match field_type:
+                            case "int":
+                                instance_fields[field_name] = jvm.Value.int(0)
+                            case "boolean":
+                                instance_fields[field_name] = jvm.Value.boolean(False)
+                            case "char":
+                                instance_fields[field_name] = jvm.Value.char('\u0000')
+                            case _:
+                                instance_fields[field_name] = jvm.Value(jvm.Reference(), None)
+                    else:
+                        # handling single-dimension arrays like "int[]", "char[]", "boolean[]"
+                        match field_type:
+                            case "int":
+                                elem_type = jvm.Int()
+                            case "char":
+                                elem_type = jvm.Char()
+                            case "boolean":
+                                elem_type = jvm.Boolean()
+                            case _:
+                                elem_type = jvm.Reference()
+                        instance_fields[field_name] = jvm.Value.array(elem_type, [])
+
 
                 ref = max(state.heap.keys()) + 1 if state.heap else 0
                 

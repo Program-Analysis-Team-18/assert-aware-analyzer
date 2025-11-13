@@ -18,18 +18,6 @@
         "base": "int"
       },
       "value": null
-    },
-    {
-      "access": [
-        "private"
-      ],
-      "annotations": [],
-      "name": "value2",
-      "type": {
-        "annotations": [],
-        "base": "int"
-      },
-      "value": null
     }
   ],
   "innerclasses": [],
@@ -75,16 +63,9 @@
             "type": "int"
           },
           {
-            "index": 2,
-            "offset": 6,
-            "opr": "load",
-            "type": "int"
-          },
-          {
             "access": "virtual",
             "method": {
               "args": [
-                "int",
                 "int"
               ],
               "name": "set",
@@ -94,11 +75,11 @@
               },
               "returns": null
             },
-            "offset": 7,
+            "offset": 6,
             "opr": "invoke"
           },
           {
-            "offset": 10,
+            "offset": 9,
             "opr": "return",
             "type": null
           }
@@ -106,26 +87,18 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 11,
+            "line": 10,
             "offset": 0
           }
         ],
-        "max_locals": 3,
-        "max_stack": 3,
+        "max_locals": 2,
+        "max_stack": 2,
         "stack_map": null
       },
       "default": null,
       "exceptions": [],
       "name": "<init>",
       "params": [
-        {
-          "annotations": [],
-          "type": {
-            "annotations": [],
-            "base": "int"
-          },
-          "visible": true
-        },
         {
           "annotations": [],
           "type": {
@@ -211,29 +184,7 @@
             "static": false
           },
           {
-            "index": 0,
             "offset": 17,
-            "opr": "load",
-            "type": "ref"
-          },
-          {
-            "index": 2,
-            "offset": 18,
-            "opr": "load",
-            "type": "int"
-          },
-          {
-            "field": {
-              "class": "jpamb/cases/PositiveInteger",
-              "name": "value2",
-              "type": "int"
-            },
-            "offset": 19,
-            "opr": "put",
-            "static": false
-          },
-          {
-            "offset": 22,
             "opr": "return",
             "type": null
           }
@@ -241,23 +192,19 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 14,
+            "line": 13,
             "offset": 0
           },
           {
-            "line": 15,
+            "line": 14,
             "offset": 6
           },
           {
-            "line": 16,
+            "line": 15,
             "offset": 9
-          },
-          {
-            "line": 17,
-            "offset": 12
           }
         ],
-        "max_locals": 3,
+        "max_locals": 2,
         "max_stack": 2,
         "stack_map": [
           {
@@ -270,14 +217,6 @@
       "exceptions": [],
       "name": "set",
       "params": [
-        {
-          "annotations": [],
-          "type": {
-            "annotations": [],
-            "base": "int"
-          },
-          "visible": true
-        },
         {
           "annotations": [],
           "type": {
@@ -324,7 +263,7 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 19,
+            "line": 17,
             "offset": 0
           }
         ],

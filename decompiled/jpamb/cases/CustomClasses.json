@@ -63,7 +63,7 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 7,
+            "line": 8,
             "offset": 0
           }
         ],
@@ -155,11 +155,11 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 11,
+            "line": 12,
             "offset": 0
           },
           {
-            "line": 12,
+            "line": 13,
             "offset": 6
           }
         ],
@@ -219,18 +219,9 @@
             "type": "int"
           },
           {
-            "offset": 5,
-            "opr": "push",
-            "value": {
-              "type": "integer",
-              "value": 0
-            }
-          },
-          {
             "access": "special",
             "method": {
               "args": [
-                "int",
                 "int"
               ],
               "is_interface": false,
@@ -241,17 +232,17 @@
               },
               "returns": null
             },
-            "offset": 6,
+            "offset": 5,
             "opr": "invoke"
           },
           {
             "index": 1,
-            "offset": 9,
+            "offset": 8,
             "opr": "store",
             "type": "ref"
           },
           {
-            "offset": 10,
+            "offset": 9,
             "opr": "return",
             "type": null
           }
@@ -259,16 +250,16 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 16,
+            "line": 17,
             "offset": 0
           },
           {
-            "line": 19,
-            "offset": 6
+            "line": 20,
+            "offset": 5
           }
         ],
         "max_locals": 2,
-        "max_stack": 4,
+        "max_stack": 3,
         "stack_map": null
       },
       "default": null,
@@ -280,6 +271,65 @@
           "type": {
             "annotations": [],
             "base": "int"
+          },
+          "visible": true
+        }
+      ],
+      "returns": {
+        "annotations": [],
+        "type": null
+      },
+      "typeparams": []
+    },
+    {
+      "access": [
+        "public",
+        "static"
+      ],
+      "annotations": [
+        {
+          "is_runtime_visible": true,
+          "type": "jpamb/utils/Case",
+          "values": {
+            "value": {
+              "type": "string",
+              "value": "(new jpamb/cases/ArrayInputClass(1,2,3)) -> ok"
+            }
+          }
+        }
+      ],
+      "code": {
+        "annotations": [],
+        "bytecode": [
+          {
+            "offset": 0,
+            "opr": "return",
+            "type": null
+          }
+        ],
+        "exceptions": [],
+        "lines": [
+          {
+            "line": 27,
+            "offset": 0
+          }
+        ],
+        "max_locals": 1,
+        "max_stack": 0,
+        "stack_map": null
+      },
+      "default": null,
+      "exceptions": [],
+      "name": "TestArrayInput",
+      "params": [
+        {
+          "annotations": [],
+          "type": {
+            "annotations": [],
+            "args": [],
+            "inner": null,
+            "kind": "class",
+            "name": "jpamb/cases/ArrayInputClass"
           },
           "visible": true
         }
@@ -329,18 +379,9 @@
             }
           },
           {
-            "offset": 7,
-            "opr": "push",
-            "value": {
-              "type": "integer",
-              "value": 0
-            }
-          },
-          {
             "access": "special",
             "method": {
               "args": [
-                "int",
                 "int"
               ],
               "is_interface": false,
@@ -351,12 +392,12 @@
               },
               "returns": null
             },
-            "offset": 8,
+            "offset": 7,
             "opr": "invoke"
           },
           {
             "index": 1,
-            "offset": 11,
+            "offset": 10,
             "opr": "store",
             "type": "ref"
           },
@@ -366,19 +407,19 @@
               "name": "$assertionsDisabled",
               "type": "boolean"
             },
-            "offset": 12,
+            "offset": 11,
             "opr": "get",
             "static": true
           },
           {
             "condition": "ne",
-            "offset": 15,
+            "offset": 14,
             "opr": "ifz",
-            "target": 18
+            "target": 17
           },
           {
             "index": 1,
-            "offset": 18,
+            "offset": 17,
             "opr": "load",
             "type": "ref"
           },
@@ -393,12 +434,12 @@
               },
               "returns": "int"
             },
-            "offset": 19,
+            "offset": 18,
             "opr": "invoke"
           },
           {
             "index": 0,
-            "offset": 22,
+            "offset": 21,
             "opr": "load",
             "type": "ref"
           },
@@ -413,28 +454,28 @@
               },
               "returns": "int"
             },
-            "offset": 23,
+            "offset": 22,
             "opr": "invoke"
           },
           {
-            "offset": 26,
+            "offset": 25,
             "operant": "sub",
             "opr": "binary",
             "type": "int"
           },
           {
             "condition": "ge",
-            "offset": 27,
+            "offset": 26,
             "opr": "ifz",
-            "target": 18
+            "target": 17
           },
           {
             "class": "java/lang/AssertionError",
-            "offset": 30,
+            "offset": 29,
             "opr": "new"
           },
           {
-            "offset": 33,
+            "offset": 32,
             "opr": "dup",
             "words": 1
           },
@@ -450,15 +491,15 @@
               },
               "returns": null
             },
-            "offset": 34,
+            "offset": 33,
             "opr": "invoke"
           },
           {
-            "offset": 37,
+            "offset": 36,
             "opr": "throw"
           },
           {
-            "offset": 38,
+            "offset": 37,
             "opr": "return",
             "type": null
           }
@@ -466,23 +507,23 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 25,
+            "line": 33,
             "offset": 0
           },
           {
-            "line": 33,
-            "offset": 6
+            "line": 44,
+            "offset": 5
           },
           {
-            "line": 40,
-            "offset": 18
+            "line": 51,
+            "offset": 17
           }
         ],
         "max_locals": 2,
-        "max_stack": 4,
+        "max_stack": 3,
         "stack_map": [
           {
-            "index": 18,
+            "index": 17,
             "info": [
               {
                 "ref": {
@@ -597,7 +638,7 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 7,
+            "line": 8,
             "offset": 0
           }
         ],

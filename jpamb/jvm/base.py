@@ -112,6 +112,7 @@ class Type(ABC):
                     semi = input.find(";", i + 1)
                     if semi == -1:
                         raise ValueError(f"Unterminated object type in {input!r}")
+                    #TODO:  maybe add also the type of input parameters?
                     slashed = input[i + 1 : semi]
                     classname = slashed.replace("/", ".")
                     r = Object(ClassName.decode(classname))
@@ -779,10 +780,42 @@ class ValueParser:
         args_str = match.group(2)
         #TODO - make it work for types that are not integers....
         #print(ValueParser.parse(args_str)[0].type)
-        check_if_integer = re.match(r"^([0-9]+)$", args_str)
-        if not check_if_integer:
-            raise ValueError("Unsupported type of input to the object's constructor")     
-        arg = Value.int(int(args_str))
+
+        print(args_str)
+        arg = None
+        if re.match(r"^([0-9]+)$", args_str):
+            arg = Value.int(int(args_str))
+        elif re.search(r'\[([IC]):\s*([^]]+)\]', args_str):
+            arr_match = re.search(r'\[([IC]):\s*([^]]+)\]', args_str)
+            arr_type = arr_match.group(1)
+            arr_content = arr_match.group(2)
+
+            cleaned = arr_content.strip('()').split(',')
+            args_str_list = [item.strip() for item in cleaned]
+            args_list = []
+
+            if arr_type == 'I':
+                for integer in args_str_list:
+                    args_list.append(Value.int(int(integer)))
+                arg = Value.array(Int(), args_list)
+            elif arr_type == 'C':
+                for character in args_str_list:
+                    args_list.append(Value.char(character))
+                arg = Value.array(Char(), args_list)
+            else:
+                raise ValueError("Unsupported array type for object's constuctor input")
+            
+        elif re.match(r"^([^0-9,])$", args_str):
+            arg = Value.char(args_str)
+        else:
+            raise ValueError("Unsupported type of input to the object's constructor")  
+
+
+        # check_if_integer = re.match(r"^([0-9]+)$", args_str)
+        # if not check_if_integer:
+        #     raise ValueError("Unsupported type of input to the object's constructor")     
+        # arg = Value.int(int(args_str))
+
         arg_dict = {}
         arg_dict["value"] = arg
 

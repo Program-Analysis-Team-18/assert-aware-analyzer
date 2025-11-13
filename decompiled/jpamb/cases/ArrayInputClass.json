@@ -1,0 +1,157 @@
+{
+  "access": [
+    "public",
+    "super"
+  ],
+  "annotations": [],
+  "bootstrapmethods": [],
+  "enclosingmethod": null,
+  "fields": [
+    {
+      "access": [
+        "private"
+      ],
+      "annotations": [],
+      "name": "numbers",
+      "type": {
+        "annotations": [],
+        "kind": "array",
+        "type": {
+          "annotations": [],
+          "base": "int"
+        }
+      },
+      "value": null
+    },
+    {
+      "access": [
+        "private"
+      ],
+      "annotations": [],
+      "name": "check",
+      "type": {
+        "annotations": [],
+        "base": "int"
+      },
+      "value": null
+    }
+  ],
+  "innerclasses": [],
+  "interfaces": [],
+  "methods": [
+    {
+      "access": [
+        "public"
+      ],
+      "annotations": [],
+      "code": {
+        "annotations": [],
+        "bytecode": [
+          {
+            "index": 0,
+            "offset": 0,
+            "opr": "load",
+            "type": "ref"
+          },
+          {
+            "access": "special",
+            "method": {
+              "args": [],
+              "is_interface": false,
+              "name": "<init>",
+              "ref": {
+                "kind": "class",
+                "name": "java/lang/Object"
+              },
+              "returns": null
+            },
+            "offset": 1,
+            "opr": "invoke"
+          },
+          {
+            "index": 0,
+            "offset": 4,
+            "opr": "load",
+            "type": "ref"
+          },
+          {
+            "index": 1,
+            "offset": 5,
+            "opr": "load",
+            "type": "ref"
+          },
+          {
+            "field": {
+              "class": "jpamb/cases/ArrayInputClass",
+              "name": "numbers",
+              "type": {
+                "kind": "array",
+                "type": "int"
+              }
+            },
+            "offset": 6,
+            "opr": "put",
+            "static": false
+          },
+          {
+            "offset": 9,
+            "opr": "return",
+            "type": null
+          }
+        ],
+        "exceptions": [],
+        "lines": [
+          {
+            "line": 11,
+            "offset": 0
+          },
+          {
+            "line": 12,
+            "offset": 2
+          },
+          {
+            "line": 13,
+            "offset": 5
+          }
+        ],
+        "max_locals": 2,
+        "max_stack": 2,
+        "stack_map": null
+      },
+      "default": null,
+      "exceptions": [],
+      "name": "<init>",
+      "params": [
+        {
+          "annotations": [],
+          "type": {
+            "annotations": [],
+            "kind": "array",
+            "type": {
+              "annotations": [],
+              "base": "int"
+            }
+          },
+          "visible": true
+        }
+      ],
+      "returns": {
+        "annotations": [],
+        "type": null
+      },
+      "typeparams": []
+    }
+  ],
+  "name": "jpamb/cases/ArrayInputClass",
+  "super": {
+    "annotations": [],
+    "args": [],
+    "inner": null,
+    "name": "java/lang/Object"
+  },
+  "typeparams": [],
+  "version": [
+    63,
+    0
+  ]
+}
