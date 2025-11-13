@@ -364,18 +364,18 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         new_frame = Frame.from_method(method)
         new_frame.pc = PC(method, 0)
 
-        param_count = len(method.methodid.params) + 1
-        
-        args = []
-        for _ in range(param_count):
-            args.insert(0, frame.stack.pop())
-        
-        for i, arg in enumerate(args):
-            new_frame.locals[i] = arg
+        for index, param in enumerate(method.extension.params):
+            local = frame.stack.pop()
+
+            # assert isinstance(local.type, type(param)), f'''
+            # Inappropriate argument type: {local.type!r}
+            # (expected {param!r})
+            # '''
+
+            new_frame.locals[index] = local
 
         state.frames.push(new_frame)
         return state
-
     def _invoke_special(method: jvm.AbsMethodID, is_interface: bool):
         """
         The invoke special opcode for calling constructors, private methods, and superclass methods.

@@ -13,7 +13,7 @@ public class CustomClasses {
 
     @Case("(5) -> ok")
     public static void WithdrawInt(int i) {
-        PositiveInteger amount = new PositiveInteger(i);
+        PositiveInteger amount = new PositiveInteger(i, 0);
 
         // int a = 2;
         return;
@@ -22,7 +22,7 @@ public class CustomClasses {
     @Case("(new jpamb/cases/PositiveInteger(5)) -> ok")
     public static void Withdraw(PositiveInteger amount) {
 
-        PositiveInteger balance = new PositiveInteger(1000);
+        PositiveInteger balance = new PositiveInteger(1000, 0);
 
         // int new_value = amount.get();
         // int a = 2;
