@@ -404,7 +404,7 @@ It essentially skips the run made my jpamb build and manually runs maven to comp
 This is an example of using our interpreter with method that takes object as an input parameter
 
 ```shell
-$ uv run solutions/interpreter.py "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger;)V" "(new jpamb/cases/PositiveInteger(5))"
+$ uv run solutions/interpreter.py "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V" "(new jpamb/cases/PositiveInteger(1))"
 ```
 
 
