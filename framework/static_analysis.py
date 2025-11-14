@@ -7,17 +7,19 @@ import jpamb
 import sys
 from jpamb import model
 from pathlib import Path
+from typing import List
+
 
 import inspect
 
 #Import aaa_utils 
 try:
-    from aaa_utils import MAP_PATH, Parameter, Assertion, AAAMethod, AAAClass, AAAMap, AssertionNodeInfo
+    from utils import MAP_PATH, Parameter, Assertion, AAAMethod, AAAClass, AAAMap, AssertionNodeInfo
 except Exception:
     repo_root = Path(__file__).resolve().parents[1]  # parent of static-analysis folder
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
-    from aaa_utils import MAP_PATH, Parameter, Assertion, AAAMethod, AAAClass, AAAMap, AssertionNodeInfo
+    from utils import MAP_PATH, Parameter, Assertion, AAAMethod, AAAClass, AAAMap, AssertionNodeInfo
 
 def print_tree(node, depth=0):
     print("  " * depth + f"{node.type}")
@@ -36,7 +38,7 @@ def get_method_data(methodid: jpamb.jvm.AbsMethodID):
     print(f"method_name: {method_name}")
     
     with open(srcfile, "rb") as f:
-        data = f.read()
+        data: bytes = f.read()
         tree = parser.parse(data)
     # print(tree)
     class_q = tree_sitter.Query( JAVA_LANGUAGE,
@@ -68,20 +70,34 @@ def get_method_data(methodid: jpamb.jvm.AbsMethodID):
     assert_q = tree_sitter.Query(JAVA_LANGUAGE, """(assert_statement) @assert""")
     parameters_q = tree_sitter.Query(JAVA_LANGUAGE, """(formal_parameters) @params""")
    
-    
+    param_list: List[Parameter]  = []
     for node in tree_sitter.QueryCursor(method_q).captures(tree.root_node)["method"]:
         for name, nodelist in tree_sitter.QueryCursor(parameters_q).captures(node).items():
             for formal_params in nodelist:
                 for formal_param in formal_params.children:
                     if formal_param.type != "formal_parameter":
                         continue
-                    print(f"formal_param.type: {formal_param.type}")
-                    print(f"formal_param: {formal_param}")
-                    for item in formal_param.children:
-                        # if item.type == ""
-                        print(f"  item.type: {item.type}")
-                        print(f"  item: {item}")
+                    
 
+                    name = data[formal_param.start_byte: formal_param.end_byte].decode("utf8")
+                    # print(f"formal_param.type: {formal_param.type}")
+                    # print(f"formal_param: {formal_param}")
+                    for item in formal_param.children:
+                        name: str = ""
+                        type: str = ""
+                        print(f"item.type: {item.type}")
+                        if ("type" in item.type):
+                            type = data[item.start_byte: item.end_byte].decode("utf8")
+                            # print(f"type: {type}")
+                        if ( item.type == "identifier"):
+                            name = data[item.start_byte: item.end_byte].decode("utf8")
+                            # print(f"name: {name}")
+                        if (name and type):
+                            param_list.append(Parameter(name, type))
+                        else: raise ValueError("a parameter is missing")
+
+    for param in param_list:
+        print(f"param: {param}")
     
     for node in tree_sitter.QueryCursor(method_q).captures(tree.root_node)["method"]:
         indent = 0
@@ -113,7 +129,7 @@ def setup():
 if __name__ == "__main__":
     setup()
 
-    path_file: Path = Path("static-analysis").resolve()
+    path_file: Path = Path(".").resolve()
     
     suite = model.Suite(Path(path_file))
     # get_method_data(Simple)
