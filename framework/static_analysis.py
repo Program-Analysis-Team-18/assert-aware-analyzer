@@ -113,7 +113,7 @@ def setup():
 if __name__ == "__main__":
     setup()
 
-    path_file: Path = Path(".").resolve()
+    path_file: Path = Path("static-analysis").resolve()
     
     suite = model.Suite(Path(path_file))
     # get_method_data(Simple)

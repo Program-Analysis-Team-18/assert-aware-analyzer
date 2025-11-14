@@ -4,7 +4,7 @@ from tree_sitter import Point, Node
 import pickle
 
 global MAP_PATH
-MAP_PATH = "assert-aware-analysis/aaa_map.pkl"
+MAP_PATH = "framework/aaa_map.pkl"
 
 @dataclass
 class Parameter:
