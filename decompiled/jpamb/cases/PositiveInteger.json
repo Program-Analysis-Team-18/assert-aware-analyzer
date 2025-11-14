@@ -12,7 +12,7 @@
         "private"
       ],
       "annotations": [],
-      "name": "value",
+      "name": "check_value",
       "type": {
         "annotations": [],
         "base": "int"
@@ -176,7 +176,7 @@
           {
             "field": {
               "class": "jpamb/cases/PositiveInteger",
-              "name": "value",
+              "name": "check_value",
               "type": "int"
             },
             "offset": 14,
@@ -247,7 +247,7 @@
           {
             "field": {
               "class": "jpamb/cases/PositiveInteger",
-              "name": "value",
+              "name": "check_value",
               "type": "int"
             },
             "offset": 1,

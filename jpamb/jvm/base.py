@@ -112,9 +112,14 @@ class Type(ABC):
                     semi = input.find(";", i + 1)
                     if semi == -1:
                         raise ValueError(f"Unterminated object type in {input!r}")
-                    #TODO:  maybe add also the type of input parameters?
                     slashed = input[i + 1 : semi]
-                    classname = slashed.replace("/", ".")
+                    if re.match(r'^([^<]+)<', slashed):
+                        classname_re = re.match(r'^([^<]+)<', slashed)
+                    else:
+                        raise ValueError("Class definition is: Lpath/to/class<init>CONSTRUCTOR_INPUT_TYPE;")
+                    
+                    classname_f_slash = classname_re.group(1)
+                    classname = classname_f_slash.replace("/", ".")
                     r = Object(ClassName.decode(classname))
                     i = semi
                 case "[":  # ]
@@ -803,7 +808,6 @@ class ValueParser:
                 arg = Value.array(Char(), args_list)
             else:
                 raise ValueError("Unsupported array type for object's constuctor input")
-            
         elif re.match(r"^([^0-9,])$", args_str):
             arg = Value.char(args_str)
         else:

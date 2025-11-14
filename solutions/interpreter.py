@@ -764,7 +764,6 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
 
             ref = max(heap.keys()) + 1 if heap else 0
             #on the heap, the object will already have a predetermined value, but if we run the constructor anyway then it doesn't really matter
-            #obj_value = jvm.Value(jvm.Object(class_name), value.value)
             obj_value = _new_get_obj_value(class_name)
             heap[ref] = obj_value
             current_frame.locals[index] = jvm.Value.int(ref)        # it needs this part - to be able to read the reference later
@@ -778,7 +777,7 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
             current_frame.stack.push(push_value)
 
             #-------invoke special-------------
-            input_type = value.value['value'].type.encode()
+            input_type = push_value.type.encode()
             constructor_method_id_str = class_name_str + ".<init>:(" + input_type + ")V"        #for now, we assume that all constructors will return void
             constructor_method_id = jvm.AbsMethodID.decode(constructor_method_id_str)
             state = _invoke_special_method(constructor_method_id,False, state, current_frame)
