@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List
-from tree_sitter import Point, Node
+from tree_sitter import Point, Node, Tree
 
 
 @dataclass
@@ -11,19 +11,22 @@ class Parameter:
     def __init__(self, name: str, type: str):
         self.name = name
         self.type = type
+    def __str__(self):
+        return f"parameter: {self.name}, type: {self.type}"
 
 @dataclass
 class Assertion:
     absolute_start_line: Point
     absolute_end_line: Point
-    assert_ast: Node
+    assertion_node: Node
     classification: str 
     
-    def __init__(self, absolute_start_line: Point, absolute_end_line: Point, assert_node: Node, classification: str):
+    def __init__(self, absolute_start_line: Point, absolute_end_line: Point, assertion_node: Node, classification: str):
         self.absolute_start_line = absolute_start_line
         self.absolute_end_line = absolute_end_line
-        self.assert_node = assert_node
+        self.assertion_node = assertion_node
         self.classification = classification
+        
 
 @dataclass
 class Methods:

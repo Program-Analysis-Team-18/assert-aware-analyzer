@@ -2,7 +2,7 @@
 import logging
 import tree_sitter
 import tree_sitter_java
-from tree_sitter import Point, Node
+from tree_sitter import Tree, Query, QueryCursor, Node
 import jpamb
 import sys
 from jpamb import model
@@ -10,111 +10,91 @@ from pathlib import Path
 from typing import List
 
 
-import inspect
-
-#Import aaa_utils 
-try:
-    from utils import MAP_PATH, Parameter, Assertion, AAAMethod, AAAClass, AAAMap, AssertionNodeInfo
-except Exception:
-    repo_root = Path(__file__).resolve().parents[1]  # parent of static-analysis folder
-    if str(repo_root) not in sys.path:
-        sys.path.insert(0, str(repo_root))
-    from utils import MAP_PATH, Parameter, Assertion, AAAMethod, AAAClass, AAAMap, AssertionNodeInfo
-
-def print_tree(node, depth=0):
-    print("  " * depth + f"{node.type}")
-    for child in node.children:
-        print_tree(child, depth + 1)
+from utils import Parameter, Assertion, Methods, Classes, Map
 
 
-
-def get_method_data(methodid: jpamb.jvm.AbsMethodID):
-    """TODO add documentation"""
-    global log
-    srcfile = suite.sourcefile(methodid.classname)
-    method_class = methodid.classname
-    method_name = methodid.extension.name
-    print(f"srcfile: {srcfile}")
-    print(f"method_name: {method_name}")
-    
+def parse_tree(srcfile: Path) -> tuple[Tree, bytes]:
     with open(srcfile, "rb") as f:
-        data: bytes = f.read()
-        tree = parser.parse(data)
-    # print(tree)
-    class_q = tree_sitter.Query( JAVA_LANGUAGE,
-        f"""
+        file_data: bytes = f.read()
+        tree = parser.parse(file_data)
+    
+    return tree, file_data
+
+def get_class_query(class_name: str) -> Query:
+    return Query(JAVA_LANGUAGE,
+        f="""
         (class_declaration 
             name: ((identifier) @class-name 
-                (#eq? @class-name "{method_class.name}"))) @class
+                (#eq? @class-name "{class_name}"))) @class
         """,
     )
-    
-    for node in tree_sitter.QueryCursor(class_q).captures(tree.root_node)["class"]:
-        # return AssertionNodeInfo(node.start_byte, node.end_byte, methodid)   
-        break
-    else:
-        log.error(f"could not find a class of name {method_class.name} in {srcfile}")
 
-        sys.exit(-1)
-
-    method_q = tree_sitter.Query( JAVA_LANGUAGE,
+def get_method_query(method_name: str):
+    return Query(JAVA_LANGUAGE,
         f"""
         (method_declaration 
             name: ((identifier) @method-name
                 (#eq? @method-name "{method_name}"))) @method
         """,
     )
-    print("here")
+
+"""Refactor"""
+def parse_parameters_data(method_name: str, method_node: Node, file_data: bytes) -> List[Parameter]:
+    parameters_q = Query(JAVA_LANGUAGE, """(formal_parameters) @params""")
     
-    # parse the parameters of the function
-    assert_q = tree_sitter.Query(JAVA_LANGUAGE, """(assert_statement) @assert""")
-    parameters_q = tree_sitter.Query(JAVA_LANGUAGE, """(formal_parameters) @params""")
-   
     param_list: List[Parameter]  = []
-    for node in tree_sitter.QueryCursor(method_q).captures(tree.root_node)["method"]:
-        for name, nodelist in tree_sitter.QueryCursor(parameters_q).captures(node).items():
-            for formal_params in nodelist:
-                for formal_param in formal_params.children:
-                    if formal_param.type != "formal_parameter":
-                        continue
-                    
 
-                    name = data[formal_param.start_byte: formal_param.end_byte].decode("utf8")
-                    # print(f"formal_param.type: {formal_param.type}")
-                    # print(f"formal_param: {formal_param}")
-                    for item in formal_param.children:
-                        name: str = ""
-                        type: str = ""
-                        print(f"item.type: {item.type}")
-                        if ("type" in item.type):
-                            type = data[item.start_byte: item.end_byte].decode("utf8")
-                            # print(f"type: {type}")
-                        if ( item.type == "identifier"):
-                            name = data[item.start_byte: item.end_byte].decode("utf8")
-                            # print(f"name: {name}")
-                        if (name and type):
-                            param_list.append(Parameter(name, type))
-                        else: raise ValueError("a parameter is missing")
+    for name, nodelist in QueryCursor(parameters_q).captures(method_node).items():
+        for formal_params in nodelist:
+            for formal_param in formal_params.children:
+                if formal_param.type != "formal_parameter":
+                    continue
+                ptype = formal_param.child_by_field_name("type")
+                pname = formal_param.child_by_field_name("name")
+                ptype_text = file_data[ptype.start_byte : ptype.end_byte].decode("utf8")
+                pname_text = file_data[pname.start_byte : pname.end_byte].decode("utf8")
+                if (pname and ptype):
+                    param_list.append(Parameter(pname_text, ptype_text))
+                else: raise ValueError("a parameter is missing")
+    return param_list
 
-    for param in param_list:
-        print(f"param: {param}")
+"""Refactor"""
+def parse_assertion_data(method_node: Node, file_data: bytes) -> List[Assertion]:
+    print("assertion callled")
+    assert_q = Query(JAVA_LANGUAGE, """(assert_statement) @assert""")
+    assertion_list = []
+
+    # def __init__(self, absolute_start_line: Point, absolute_end_line: Point, assert_node: Node, classification: str):
+    for name, nodelist in QueryCursor(assert_q).captures(method_node).items():
+        for assertion_node in nodelist:
+            start_line, start_col = assertion_node.start_point
+            end_line, end_col = assertion_node.end_point
+            classification: str = "unclassified"
+            assertion_list.append(Assertion(start_line, end_line, assertion_node, classification))
+
+    return assertion_list
+
+"""?TODO?"""
+def run_query( query: Query):
+    pass
+
+def get_method_data(methodid: jpamb.jvm.AbsMethodID) -> tuple[str, Methods]:
+    srcfile = suite.sourcefile(methodid.classname)
+    class_name = methodid.classname
+    method_name = methodid.extension.name
     
-    for node in tree_sitter.QueryCursor(method_q).captures(tree.root_node)["method"]:
-        indent = 0
-        start = node.start_point
-        end = node.end_point
-        print("  " * indent + f"{node.type} [{start[0]+1}:{start[1]}–{end[0]+1}:{end[1]}]")
-        try:
-            for assert_node in tree_sitter.QueryCursor(assert_q).captures(node)["assert"]:
-                start = assert_node.start_point
-                end = assert_node.end_point
-                print(assert_node)
-                print(inspect.getmodule(start))
-                #print("  " * indent + f"{assert_node.type} [{start[0]+1}:{start[1]}–{end[0]+1}:{end[1]}]")
-        except KeyError:
-            pass
+    tree, file_data = parse_tree(srcfile)
+    method_node = QueryCursor(get_method_query(method_name)).captures(tree.root_node)["method"][0]
+    
+    param_list = parse_parameters_data(method_name, method_node, file_data)
+    assertion_list = parse_assertion_data(method_node, file_data)
+    
+    return class_name, Methods(method_name, param_list, assertion_list)
 
 
+
+    
+    
 def setup():
     global JAVA_LANGUAGE
     JAVA_LANGUAGE = tree_sitter.Language(tree_sitter_java.language())
@@ -129,93 +109,30 @@ def setup():
 if __name__ == "__main__":
     setup()
 
+    # Resolve the path of the suite
     path_file: Path = Path(".").resolve()
-    
     suite = model.Suite(Path(path_file))
-    # get_method_data(Simple)
     
+    # Initialize the global assertion mapping
+    global assertion_mapping
+    assertion_mapping = Map()
     
     # We go through all methods in the suite
-    for methodid, correct in suite.case_methods():        
-        # the first one jpamb.cases.Arrays.arrayContent:()V
-        if (str(methodid)  == "jpamb.cases.Simple.divideZeroByZero:(II)I"):
-            print(f"methodid REACHED: {methodid}")
-            #add all these json to their class
-            method = get_method_data(methodid)
-            break
-        
-        
+    for methodid, correct in suite.case_methods():
+        class_name, method = get_method_data(methodid)
+        print(f"Class: {class_name}, Method: {method}")
+        #exit(0)
+        if assertion_mapping.return_class(class_name) is None:
+            class_obj = Classes(class_name)
+            assertion_mapping.add_class(class_obj)
+        else:
+            if assertion_mapping.return_class(class_name).return_method(method.method_name) is None:
+                assertion_mapping.return_class(class_name).add_method(method)
                 
-        
-
-'''
-
-for node in tree_sitter.QueryCursor(method_q).captures(node)["method"]:
-
-    if not (p := node.child_by_field_name("parameters")):
-        log.debug(f"Could not find parameteres of {method_name}")
-        continue
-
-    params = [c for c in p.children if c.type == "formal_parameter"]
-
-    if len(params) != len(methodid.extension.params):
-        continue
-
-    # log.debug(methodid.extension.params)
-    # log.debug(params)
-
-    for tn, t in zip(methodid.extension.params, params):
-        if (tp := t.child_by_field_name("type")) is None:
-            break
-
-        if tp.text is None:
-            break
-
-        # todo check for type.
-    else:
-        break
-else:
-    log.warning(f"could not find a method of name {method_name} in {simple_classname}")
-    sys.exit(-1)
-
-# log.debug("Found method %s %s", method_name, node.range)
-
-body = node.child_by_field_name("body")
-assert body and body.text
-for t in body.text.splitlines():
-    log.debug("line: %s", t.decode())
-
-assert_q = tree_sitter.Query(JAVA_LANGUAGE, """(assert_statement) @assert""")
-cursor = tree_sitter.QueryCursor(assert_q)  # query goes here
-
-tree_dict: dict[str, list[Node]] = cursor.captures(body) # this typing is accurate
-
-# for node, name in cursor.captures(body):
-print(type(cursor.captures(body)))
-print([type(key) for key in cursor.captures(body).keys()])
-print([type(v) for v in cursor.captures(body).values()])
-print([type(v[0]) for v in cursor.captures(body).values()])
-
-# main    : <class 'dict'>
-# main    : [<class 'tuple'>]
-# main    : [<class 'list'>]
-
-    # print(body.text[node.start_byte:node.end_byte].decode())
-
-
-
-
-
-assert_found = any(
-    capture_name == "assert"
-    for capture_name, _ in tree_sitter.QueryCursor(assert_q).captures(body).items()
-)
-if assert_found:
-    log.debug("Found assertion")
-    print("assertion error;80%")
-else:
-    log.debug("No assertion")
-    print("assertion error;20%")
-
-sys.exit(0)
-'''
+    print("Assertion Mapping:")
+    print(assertion_mapping)
+        # the first one jpamb.cases.Arrays.arrayContent:()V
+        #if (str(methodid)  == "jpamb.cases.Arrays.arrayContent:()V"):
+        #    print(f"methodid REACHED: {methodid}")
+        #    class_name, method = get_method_data(methodid)
+            
