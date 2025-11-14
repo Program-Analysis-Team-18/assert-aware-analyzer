@@ -370,10 +370,41 @@ uv run jpamb evaluate -W my_analyzer.py > my_results.json
 To extend the benchmark suite you have to install nix. One way to do that is to use 
 use the [determinate system](https://docs.determinate.systems/) installer.
 
-After any changes to the source files you should run:
+Original README: After any changes to the source files you should run:
 
 ```shell
 $ nix develop --command uv run build --test --decompile
+```
+
+**Note from Ksawery: Just running the command from original README doesn't work. Run this command first:
+```shell
+$ nix develop --command uv run build --compile
+```
+
+And then:
+
+```shell
+$ nix develop --command uv run build --decompile
+```
+
+Alternatively, after updating the cases, just run the script that combine commands above:
+```shell
+$ ./update_cases.sh
+```
+
+## Problems with extended benchmark
+If there are some issues during the compilation, run the following command:
+
+```shell
+$ nix develop --command uv run mvn -e compile
+```
+It essentially skips the run made my jpamb build and manually runs maven to compile the java code and will display any errors that may have occurred during compilation.
+
+## Running inetrpreter with obejct as an input to the function
+This is an example of using our interpreter with method that takes object as an input parameter
+
+```shell
+$ uv run solutions/interpreter.py "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V" "(new jpamb/cases/PositiveInteger(1))"
 ```
 
 

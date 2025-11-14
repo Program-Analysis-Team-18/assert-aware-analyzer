@@ -104,6 +104,24 @@ class Type(ABC):
                     r = Float()
                 case "D":
                     r = Double()
+                case "A":
+                    # opaque reference / unknown object
+                    r = Reference()
+                case "L":
+                    # object of a (specific) class: Lslash/separated/classname;
+                    semi = input.find(";", i + 1)
+                    if semi == -1:
+                        raise ValueError(f"Unterminated object type in {input!r}")
+                    slashed = input[i + 1 : semi]
+                    if re.match(r'^([^<]+)<', slashed):
+                        classname_re = re.match(r'^([^<]+)<', slashed)
+                    else:
+                        raise ValueError("Class definition is: Lpath/to/class<init>CONSTRUCTOR_INPUT_TYPE;")
+                    
+                    classname_f_slash = classname_re.group(1)
+                    classname = classname_f_slash.replace("/", ".")
+                    r = Object(ClassName.decode(classname))
+                    i = semi
                 case "[":  # ]
                     stack.append(Array)
                     i += 1
@@ -149,6 +167,13 @@ class Type(ABC):
             match json["kind"]:
                 case "array":
                     return Array(Type.from_json(json["type"]))
+                case "class":
+                    top = json["name"].replace("/", ".")
+                    inner = json.get("inner")
+                    while inner:
+                        top = top + "$" + inner["name"]
+                        inner = inner.get("inner")
+                    return Object(ClassName.decode(top))
                 case kind:
                     raise NotImplementedError(
                         f"Unknown kind {kind}, in Type.from_json: {json!r}"
@@ -623,6 +648,10 @@ class Value:
     @classmethod
     def array(cls, type: Type, content: Iterable) -> Self:
         return cls(Array(type), tuple(content))
+    
+    @classmethod
+    def object(cls, n: object, classname: ClassName) -> Self:
+        return cls(Object(classname), n)
 
     @classmethod
     def from_json(cls, json: dict | None) -> Self:
@@ -661,6 +690,7 @@ class ValueParser:
             ("OPEN_ARRAY", r"\[[IC]:"),
             ("CLOSE_ARRAY", r"\]"),
             ("INT", r"-?\d+"),
+            ("OBJECT", r"new [A-Za-z_./\$]+\([^)]*\)"), 
             ("BOOL", r"true|false"),
             ("CHAR", r"'[^']'"),
             ("COMMA", r","),
@@ -712,6 +742,10 @@ class ValueParser:
                 return Value.boolean(self.parse_bool())
             case "OPEN_ARRAY":
                 return self.parse_array()
+            case "OBJECT":
+                inst, classname = self.parse_object()
+                v = Value.object(inst, classname)
+                return v
         self.expected("char")
 
     def parse_int(self):
@@ -742,6 +776,56 @@ class ValueParser:
         self.expect("CLOSE_ARRAY")
 
         return Value(type, tuple(inputs))
+
+    def parse_object(self):
+        obj = self.expect("OBJECT")
+        
+        match = re.match(r"^new\s+([A-Za-z0-9_./\$]+)\(([^\)]*)\)$", obj.value)
+        classname_str = match.group(1)
+        args_str = match.group(2)
+        #TODO - make it work for many arguments.....
+        #use Input.decode_many() again ???
+        #print(ValueParser.parse(args_str)[0].type)
+
+        arg = None
+        if re.match(r"^([0-9]+)$", args_str):
+            arg = Value.int(int(args_str))
+        elif re.search(r'\[([IC]):\s*([^]]+)\]', args_str):
+            arr_match = re.search(r'\[([IC]):\s*([^]]+)\]', args_str)
+            arr_type = arr_match.group(1)
+            arr_content = arr_match.group(2)
+
+            cleaned = arr_content.strip('()').split(',')
+            args_str_list = [item.strip() for item in cleaned]
+            args_list = []
+
+            if arr_type == 'I':
+                for integer in args_str_list:
+                    args_list.append(Value.int(int(integer)))
+                arg = Value.array(Int(), args_list)
+            elif arr_type == 'C':
+                for character in args_str_list:
+                    args_list.append(Value.char(character))
+                arg = Value.array(Char(), args_list)
+            else:
+                raise ValueError("Unsupported array type for object's constuctor input")
+        elif re.match(r"^([^0-9,])$", args_str):
+            arg = Value.char(args_str)
+        else:
+            raise ValueError("Unsupported type of input to the object's constructor")  
+
+
+        # check_if_integer = re.match(r"^([0-9]+)$", args_str)
+        # if not check_if_integer:
+        #     raise ValueError("Unsupported type of input to the object's constructor")     
+        # arg = Value.int(int(args_str))
+
+        arg_dict = {}
+        arg_dict["value"] = arg
+
+        classname = ClassName.decode(classname_str)
+
+        return arg_dict, classname
 
     def parse_comma_seperated_values(self, parser=None, end_by=None):
         if self.head is None:

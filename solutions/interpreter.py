@@ -9,6 +9,7 @@ Sample execution:
 - `uv run jpamb interpret --stepwise --filter Simple.divideByN: solutions/interpreter.py`
 """
 import sys
+import re
 
 from dataclasses import dataclass
 
@@ -35,6 +36,36 @@ def wrap_value(value: any) -> jvm.Value:
             return jvm.Value.boolean(False)
         case _:
             raise TypeError(f"Do not know how to wrap {value!r}")
+        
+def return_value_given_str(input: str):
+        arg = None
+        if re.match(r"^([0-9]+)$", input):
+            arg = jvm.Value.int(int(input))
+        elif re.search(r'\[([IC]):\s*([^]]+)\]', input):
+            arr_match = re.search(r'\[([IC]):\s*([^]]+)\]', input)
+            arr_type = arr_match.group(1)
+            arr_content = arr_match.group(2)
+
+            cleaned = arr_content.strip('()').split(',')
+            args_str_list = [item.strip() for item in cleaned]
+            args_list = []
+
+            if arr_type == 'I':
+                for integer in args_str_list:
+                    args_list.append(jvm.Value.int(int(integer)))
+                arg = jvm.Value.array(jvm.Int(), args_list)
+            elif arr_type == 'C':
+                for character in args_str_list:
+                    args_list.append(jvm.Value.char(character))
+                arg = jvm.Value.array(jvm.Char(), args_list)
+            else:
+                raise ValueError("Unsupported array type for object's constuctor input")
+        elif re.match(r"^([^0-9,])$", input):
+            arg = jvm.Value.char(input)
+        else:
+            raise ValueError("Unsupported type of input to the object's constructor")  
+        return arg
+
 
 
 @dataclass
@@ -152,6 +183,57 @@ class Frame:
         """Returns an empty Frame object from the method id."""
         return Frame({}, Stack.empty(), PC(method, 0))
 
+def _new_get_obj_value(classname: jvm.ClassName):
+    suite = jpamb.Suite()
+    class_info = suite.findclass(classname)
+    #we need to push an reference of this class onto the stack
+    #dict -> jvm.AbsMethodID?
+
+    instance_fields: dict[str, jvm.Value] = {}
+    for f in class_info.get("fields", []):
+        if f.get("static", False):
+            continue
+        
+        input_array = False
+        field_name = f["name"]
+        field_type = None
+
+        #f["type"]["kind"]["array"]
+        if "kind" in f["type"]:
+            if "array" in f["type"]["kind"]:
+                input_array = True
+                field_type = f["type"]["type"]["base"]
+            else:
+                raise ValueError("Unknown json configuration")
+        else:
+            field_type = f["type"]["base"]
+        
+        if not input_array:
+            match field_type:
+                case "int":
+                    instance_fields[field_name] = jvm.Value.int(0)
+                case "boolean":
+                    instance_fields[field_name] = jvm.Value.boolean(False)
+                case "char":
+                    instance_fields[field_name] = jvm.Value.char('\u0000')
+                case _:
+                    instance_fields[field_name] = jvm.Value(jvm.Reference(), None)
+        else:
+            # handling single-dimension arrays like "int[]", "char[]", "boolean[]"
+            match field_type:
+                case "int":
+                    elem_type = jvm.Int()
+                case "char":
+                    elem_type = jvm.Char()
+                case "boolean":
+                    elem_type = jvm.Boolean()
+                case _:
+                    elem_type = jvm.Reference()
+            instance_fields[field_name] = jvm.Value.array(elem_type, [])
+
+    
+    obj_value = jvm.Value(jvm.Object(classname), instance_fields)
+    return obj_value
 
 @dataclass  # type: ignore
 class State:
@@ -169,6 +251,36 @@ class State:
     heap: dict[int, jvm.Value]
     frames: Stack[Frame]
 
+def _invoke_special_method(method: jvm.AbsMethodID, is_interface: bool, state: State, frame: Frame):
+    """
+    The invoke special opcode for calling constructors, private methods, and superclass methods.
+    bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ', σ', ι'⟩
+    """
+
+    if method.classname.name == "java/lang/Object" and method.methodid.name == "<init>":
+        frame.pc += 1
+        return state
+        
+    new_frame = Frame.from_method(method)
+    new_frame.pc = PC(method, 0)
+
+    #technically, we shoudl also determine whether our method is static or not - if it is, we should get our variables from the stack
+    #if it is not, we should get it from the heap
+    #but let's not overcomplicate it for now
+
+    #params + reference - important especially for new classes
+    param_count = len(method.methodid.params) + 1
+        
+    args = []
+    for _ in range(param_count):
+        args.insert(0, frame.stack.pop())
+        
+    for i, arg in enumerate(args):
+        new_frame.locals[i] = arg
+        
+
+    state.frames.push(new_frame)
+    return state
 
 def step(state: State, bytecode: Bytecode) -> State | str:
     """
@@ -264,6 +376,30 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         frame.stack.push(value)
         frame.pc += 1
         return state
+    
+    def _get_field(field):
+        """
+        Pops an object reference from the stack.
+        Pushes the value of the specified field onto the stack
+        Throws NullPointerException if object reference is null
+
+        bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ, σ‾, ι‾⟩
+        """
+
+        objref = frame.stack.pop()
+
+        if objref.value is None:
+            return "NullPointerException"
+        obj = state.heap.get(objref.value)
+        if obj is None:
+            raise RuntimeError(f"Invalid object reference {objref}")
+        v = obj.value[field.fieldid.name]
+        if v is None:
+            raise RuntimeError(f"Field {field} not found in object {objref}")
+        frame.stack.push(v)
+
+        frame.pc += 1
+        return state
 
     def _if(condition: str, target: int, ifz: bool = False):
         """
@@ -303,6 +439,9 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         return state
 
     def _invoke_static(method: jvm.AbsMethodID):
+        """The invoke static opcode for calling static methods
+        bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ', σ', ι'⟩
+        """
         new_frame = Frame.from_method(method)
         new_frame.pc = PC(method, 0)
 
@@ -317,6 +456,59 @@ def step(state: State, bytecode: Bytecode) -> State | str:
             new_frame.locals[index] = local
 
         state.frames.push(new_frame)
+        return state
+    def _invoke_special(method: jvm.AbsMethodID, is_interface: bool):
+        """
+        The invoke special opcode for calling constructors, private methods, and superclass methods.
+        bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ', σ', ι'⟩
+        """
+
+        if m.classname.name == "java/lang/Object" and m.methodid.name == "<init>":
+            frame.pc += 1
+            return state
+        
+        new_frame = Frame.from_method(method)
+        new_frame.pc = PC(method, 0)
+
+        #technically, we shoudl also determine whether our method is static or not - if it is, we should get our variables from the stack
+        #if it is not, we should get it from the heap
+        #but let's not overcomplicate it for now
+
+        #params + reference - important especially for new classes
+        param_count = len(method.methodid.params) + 1
+        
+        args = []
+        for _ in range(param_count):
+            args.insert(0, frame.stack.pop())
+        
+        for i, arg in enumerate(args):
+            new_frame.locals[i] = arg
+        
+
+        state.frames.push(new_frame)
+        #important: we don't have frame.pc += 1, because return instruction later would do it for us
+        return state
+    
+    def _invoke_virtual(method: jvm.AbsMethodID):
+        """
+        The invoke virtual opcode for calling instance methods
+        bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ', σ', ι'⟩
+        """
+        
+        new_frame = Frame.from_method(method)
+        new_frame.pc = PC(method, 0)
+
+        param_count = len(method.methodid.params) + 1
+        
+        args = []
+        for _ in range(param_count):
+            args.insert(0, frame.stack.pop())
+        
+        for i, arg in enumerate(args):
+            new_frame.locals[i] = arg        
+
+        state.frames.push(new_frame)
+        
         return state
 
     def _return(return_type: jvm.Type | None):
@@ -343,11 +535,27 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         return "ok"
 
     def _new(classname: jvm.ClassName):
+        """
+        The new opcode that creates a new instance of a class.
+        bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ, σ', ι'⟩
+        """
+
         match classname.name:
             case 'java/lang/AssertionError':
                 return 'assertion error'
             case _:
-                raise NotImplementedError(f"Unknown classname: {classname!r}")
+
+
+                ref = max(state.heap.keys()) + 1 if state.heap else 0
+                
+                obj_value = _new_get_obj_value(classname)
+
+                state.heap[ref] = obj_value
+
+                frame.stack.push(jvm.Value.int(ref))
+                frame.pc += 1
+
+                return state
 
     def _new_array(array_type: jvm.Type):
         assert array_type is jvm.Int(), f'NewArray {array_type} not handled'
@@ -466,8 +674,26 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         frame.pc += 1
         return state
 
-    logger.info(f"Bytecode[{frame.pc}]: {bytecode[frame.pc]}")
+    def _put_field(field: jvm.AbsFieldID):
+        """Store value into an instance field"""
+        value = frame.stack.pop() 
+        obj_ref = frame.stack.pop()  
+
+        if obj_ref.value is None:
+            return 'null pointer'
+            
+        heap_obj = state.heap[obj_ref.value]
+        
+        if isinstance(heap_obj.value, dict):
+            heap_obj.value[field.fieldid.name] = value
+        
+        frame.pc += 1
+        return state
+
+    logger.info(f"-- Bytecode[{frame.pc}]: {bytecode[frame.pc]}")
     logger.info(f"Op Stack[{frame.stack}]")
+    logger.info(f"State heap[{state.heap}]")
+    logger.info(f"Locals: {frame.locals}")
     match bytecode[frame.pc]:
         case jvm.Push(value=v): return _push(value=v)
         case jvm.Load(type=jvm.Int(), index=n): return _load(index=n)
@@ -479,6 +705,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         case jvm.Incr(index=i, amount=a): return _incr(index=i, amount=a)
         case jvm.Dup(words=1): return _dup()
         case jvm.Get(static=True, field=f): return _get_static(field=f)
+        case jvm.Get(static=False, field=f): return _get_field(field=f)
         case jvm.Return(type=t): return _return(return_type=t)
         case jvm.If(condition=c, target=t): return _if(condition=c, target=t)
         case jvm.Ifz(condition=c, target=t): return _if(condition=c, target=t, ifz=True)
@@ -489,9 +716,14 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         case jvm.ArrayLoad(type=t): return _array_load(array_type=t)
         case jvm.ArrayLength(): return _array_length()
         case jvm.InvokeStatic(method=m): return _invoke_static(method=m)
+        case jvm.InvokeSpecial(method=m, is_interface=is_interface): return _invoke_special(method=m, is_interface=is_interface)
+        case jvm.InvokeVirtual(method=m): return _invoke_virtual(method=m)
         case jvm.Goto(target=t): return _goto(target=t)
         case jvm.Load(type=jvm.Reference(), index=i): return _load(index=i)
         case jvm.Cast(from_=f, to_=t): return _cast(from_=f, to_=t)
+        case jvm.Put(static=False, field=f): return _put_field(field=f)
+        case jvm.Put(static=True, field=f): 
+            raise NotImplementedError("putstatic not implemented")
 
         case unknown:
             raise NotImplementedError(f"Don't know how to handle: {unknown!r}")
@@ -503,10 +735,11 @@ def configure_logger():
     logger.add(sys.stderr, format="[{level}] {message}")
 
 
-def generate_initial_frame(method_id: jvm.AbsMethodID, method_input: Input) -> tuple[Frame, dict[int, jvm.Value]]:
+def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, method_input_str: str, bytecode: Bytecode) -> State:
     """Generates the initial frame from the given method id and method input"""
     initial_frame = Frame.from_method(method_id)
     heap = {}
+    state = State(heap, Stack.empty().push(initial_frame))
 
     for index, value in enumerate(method_input.values):
         # match value:
@@ -516,26 +749,84 @@ def generate_initial_frame(method_id: jvm.AbsMethodID, method_input: Input) -> t
         #         local = value
         #     case _:
         #         assert False, f"Do not know how to handle {value}"
-        local = wrap_value(value.value)
-        if isinstance(local.type, jvm.Array):
-            ref = len(heap.values())
-            heap[ref] = local
+
+        #check if it is of type of custom class
+        m = re.match(r"^L([A-Za-z0-9_/\$]+);$",str(value.type))
+        if m is not None:
+            #custom class found
+            current_frame = state.frames.peek()
+
+            #----------new command
+            class_name_str = m.group(1)
+            class_name = jvm.ClassName(class_name_str)
+
+            obj_value = _new_get_obj_value(class_name)
+
+            ref = max(heap.keys()) + 1 if heap else 0
+            #on the heap, the object will already have a predetermined value, but if we run the constructor anyway then it doesn't really matter
+            obj_value = _new_get_obj_value(class_name)
+            heap[ref] = obj_value
+            current_frame.locals[index] = jvm.Value.int(ref)        # it needs this part - to be able to read the reference later
+            current_frame.stack.push(jvm.Value.int(ref))
+
+            #----------dup-----------
+            current_frame.stack.push(current_frame.stack.peek())
+            #---------push-----------
+            constuctor_parameters_str = re.search(r'\(([^()]+)\)', method_input_str)
+            push_value = return_value_given_str(constuctor_parameters_str.group(1))         #here, we need to push constructor input values (form actual user input) on to the stack
+            current_frame.stack.push(push_value)
+
+            #-------invoke special-------------
+            input_type = push_value.type.encode()
+            constructor_method_id_str = class_name_str + ".<init>:(" + input_type + ")V"        #for now, we assume that all constructors will return void
+            constructor_method_id = jvm.AbsMethodID.decode(constructor_method_id_str)
+            state = _invoke_special_method(constructor_method_id,False, state, current_frame)
+
+            #---execute the constructor
+            for x in range(100000):
+                peek_frame = state.frames.peek()
+                look_for_return = re.match(r"return:V", str(bytecode[peek_frame.pc]))
+                if look_for_return:
+                    break
+                state = step(state, bytecode)
+            
+            #--- so now we skip the interpreter at all, and "force" the initial frame - since the constructor was already checked
+            #----simply instate the initial frame again - with out heap
+            initial_frame = Frame.from_method(method_id)
             initial_frame.locals[index] = jvm.Value.int(ref)
+            state = State(heap, Stack.empty().push(initial_frame))
+
         else:
-            initial_frame.locals[index] = local
+            local = wrap_value(value.value)
+            if isinstance(local.type, jvm.Array):
+                ref = len(heap.values())
+                heap[ref] = local
+                initial_frame.locals[index] = jvm.Value.int(ref)
+            else:
+                initial_frame.locals[index] = local
+            
+            state = State(heap, Stack.empty().push(initial_frame))
 
-    logger.debug(f"Initial frame local variable {initial_frame.locals}")
+    logger.debug(f"\n\nInitial frame local variable {initial_frame.locals}")
     logger.debug(f"Heap {heap}")
-    return initial_frame, heap
+    return state
 
+def input_is_an_object() -> bool:
+    input = sys.argv[2]
+    class_input = re.search(r"\(new\s+([A-Za-z_]\w*)\(([^)]*)\)\)", input)
+
+    if class_input is not None:
+        return True
+    return False
 
 if __name__ == "__main__":
     configure_logger()
 
-    mid, minput = jpamb.getcase()
     bc = Bytecode(jpamb.Suite(), {})
-    initial_frame, heap = generate_initial_frame(mid, minput)
-    state = State(heap, Stack.empty().push(initial_frame))
+
+    mid, minput = jpamb.getcase()
+    mininput_str = sys.argv[2]
+    state = generate_initial_state(mid, minput,mininput_str,bc)
 
     for x in range(100000):
         state = step(state, bc)
