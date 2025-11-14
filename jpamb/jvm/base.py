@@ -781,7 +781,6 @@ class ValueParser:
         #TODO - make it work for types that are not integers....
         #print(ValueParser.parse(args_str)[0].type)
 
-        print(args_str)
         arg = None
         if re.match(r"^([0-9]+)$", args_str):
             arg = Value.int(int(args_str))

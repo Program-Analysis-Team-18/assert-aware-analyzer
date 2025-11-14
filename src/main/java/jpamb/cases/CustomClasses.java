@@ -31,8 +31,8 @@ public class CustomClasses {
     public static void Withdraw(PositiveInteger amount) {
 
         PositiveInteger balance = new PositiveInteger(1000);
-        // int[] arr = {1,2,3};
-        // ArrayInputClass arrClass = new ArrayInputClass(arr);
+        int[] arr = {1,2,3};
+        ArrayInputClass arrClass = new ArrayInputClass(arr);
 
 
         // int new_value = amount.get();

@@ -36,6 +36,36 @@ def wrap_value(value: any) -> jvm.Value:
             return jvm.Value.boolean(False)
         case _:
             raise TypeError(f"Do not know how to wrap {value!r}")
+        
+def return_value_given_str(input: str):
+        arg = None
+        if re.match(r"^([0-9]+)$", input):
+            arg = jvm.Value.int(int(input))
+        elif re.search(r'\[([IC]):\s*([^]]+)\]', input):
+            arr_match = re.search(r'\[([IC]):\s*([^]]+)\]', input)
+            arr_type = arr_match.group(1)
+            arr_content = arr_match.group(2)
+
+            cleaned = arr_content.strip('()').split(',')
+            args_str_list = [item.strip() for item in cleaned]
+            args_list = []
+
+            if arr_type == 'I':
+                for integer in args_str_list:
+                    args_list.append(jvm.Value.int(int(integer)))
+                arg = jvm.Value.array(jvm.Int(), args_list)
+            elif arr_type == 'C':
+                for character in args_str_list:
+                    args_list.append(jvm.Value.char(character))
+                arg = jvm.Value.array(jvm.Char(), args_list)
+            else:
+                raise ValueError("Unsupported array type for object's constuctor input")
+        elif re.match(r"^([^0-9,])$", input):
+            arg = jvm.Value.char(input)
+        else:
+            raise ValueError("Unsupported type of input to the object's constructor")  
+        return arg
+
 
 
 @dataclass
@@ -153,6 +183,57 @@ class Frame:
         """Returns an empty Frame object from the method id."""
         return Frame({}, Stack.empty(), PC(method, 0))
 
+def _new_get_obj_value(classname: jvm.ClassName):
+    suite = jpamb.Suite()
+    class_info = suite.findclass(classname)
+    #we need to push an reference of this class onto the stack
+    #dict -> jvm.AbsMethodID?
+
+    instance_fields: dict[str, jvm.Value] = {}
+    for f in class_info.get("fields", []):
+        if f.get("static", False):
+            continue
+        
+        input_array = False
+        field_name = f["name"]
+        field_type = None
+
+        #f["type"]["kind"]["array"]
+        if "kind" in f["type"]:
+            if "array" in f["type"]["kind"]:
+                input_array = True
+                field_type = f["type"]["type"]["base"]
+            else:
+                raise ValueError("Unknown json configuration")
+        else:
+            field_type = f["type"]["base"]
+        
+        if not input_array:
+            match field_type:
+                case "int":
+                    instance_fields[field_name] = jvm.Value.int(0)
+                case "boolean":
+                    instance_fields[field_name] = jvm.Value.boolean(False)
+                case "char":
+                    instance_fields[field_name] = jvm.Value.char('\u0000')
+                case _:
+                    instance_fields[field_name] = jvm.Value(jvm.Reference(), None)
+        else:
+            # handling single-dimension arrays like "int[]", "char[]", "boolean[]"
+            match field_type:
+                case "int":
+                    elem_type = jvm.Int()
+                case "char":
+                    elem_type = jvm.Char()
+                case "boolean":
+                    elem_type = jvm.Boolean()
+                case _:
+                    elem_type = jvm.Reference()
+            instance_fields[field_name] = jvm.Value.array(elem_type, [])
+
+    
+    obj_value = jvm.Value(jvm.Object(classname), instance_fields)
+    return obj_value
 
 @dataclass  # type: ignore
 class State:
@@ -463,58 +544,12 @@ def step(state: State, bytecode: Bytecode) -> State | str:
             case 'java/lang/AssertionError':
                 return 'assertion error'
             case _:
-                suite = jpamb.Suite()
-                class_info = suite.findclass(classname)
-                #we need to push an reference of this class onto the stack
-                #dict -> jvm.AbsMethodID?
-                #I don't know exactly how methodID is read later from the stack ....
-
-                instance_fields: dict[str, jvm.Value] = {}
-                for f in class_info.get("fields", []):
-                    if f.get("static", False):
-                        continue
-                    
-                    input_array = False
-                    field_name = f["name"]
-                    field_type = None
-
-                    #f["type"]["kind"]["array"]
-                    if "kind" in f["type"]:
-                        if "array" in f["type"]["kind"]:
-                            input_array = True
-                            field_type = f["type"]["type"]["base"]
-                        else:
-                            raise ValueError("Unknown json configuration")
-                    else:
-                        field_type = f["type"]["base"]
-                    
-                    if not input_array:
-                        match field_type:
-                            case "int":
-                                instance_fields[field_name] = jvm.Value.int(0)
-                            case "boolean":
-                                instance_fields[field_name] = jvm.Value.boolean(False)
-                            case "char":
-                                instance_fields[field_name] = jvm.Value.char('\u0000')
-                            case _:
-                                instance_fields[field_name] = jvm.Value(jvm.Reference(), None)
-                    else:
-                        # handling single-dimension arrays like "int[]", "char[]", "boolean[]"
-                        match field_type:
-                            case "int":
-                                elem_type = jvm.Int()
-                            case "char":
-                                elem_type = jvm.Char()
-                            case "boolean":
-                                elem_type = jvm.Boolean()
-                            case _:
-                                elem_type = jvm.Reference()
-                        instance_fields[field_name] = jvm.Value.array(elem_type, [])
 
 
                 ref = max(state.heap.keys()) + 1 if state.heap else 0
                 
-                obj_value = jvm.Value(jvm.Object(classname), instance_fields)
+                obj_value = _new_get_obj_value(classname)
+
                 state.heap[ref] = obj_value
 
                 frame.stack.push(jvm.Value.int(ref))
@@ -700,7 +735,7 @@ def configure_logger():
     logger.add(sys.stderr, format="[{level}] {message}")
 
 
-def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, bytecode: Bytecode) -> State:
+def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, method_input_str: str, bytecode: Bytecode) -> State:
     """Generates the initial frame from the given method id and method input"""
     initial_frame = Frame.from_method(method_id)
     heap = {}
@@ -725,17 +760,22 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, byte
             class_name_str = m.group(1)
             class_name = jvm.ClassName(class_name_str)
 
+            obj_value = _new_get_obj_value(class_name)
+
             ref = max(heap.keys()) + 1 if heap else 0
             #on the heap, the object will already have a predetermined value, but if we run the constructor anyway then it doesn't really matter
-            obj_value = jvm.Value(jvm.Object(class_name), value.value)
+            #obj_value = jvm.Value(jvm.Object(class_name), value.value)
+            obj_value = _new_get_obj_value(class_name)
             heap[ref] = obj_value
             current_frame.locals[index] = jvm.Value.int(ref)        # it needs this part - to be able to read the reference later
             current_frame.stack.push(jvm.Value.int(ref))
+
             #----------dup-----------
             current_frame.stack.push(current_frame.stack.peek())
             #---------push-----------
-            push_value = value.value['value'].value       #Jesus...
-            current_frame.stack.push(jvm.Value.int(push_value))
+            constuctor_parameters_str = re.search(r'\(([^()]+)\)', method_input_str)
+            push_value = return_value_given_str(constuctor_parameters_str.group(1))         #here, we need to push constructor input values (form actual user input) on to the stack
+            current_frame.stack.push(push_value)
 
             #-------invoke special-------------
             input_type = value.value['value'].type.encode()
@@ -786,7 +826,8 @@ if __name__ == "__main__":
     bc = Bytecode(jpamb.Suite(), {})
 
     mid, minput = jpamb.getcase()
-    state = generate_initial_state(mid, minput,bc)
+    mininput_str = sys.argv[2]
+    state = generate_initial_state(mid, minput,mininput_str,bc)
 
     for x in range(100000):
         state = step(state, bc)
