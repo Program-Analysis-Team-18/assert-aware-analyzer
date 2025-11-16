@@ -43,11 +43,13 @@ class Methods:
 @dataclass
 class Classes:
     class_name: str
+    average_assertion_per_method: float
     methods: List[Methods]
     
     def __init__(self, class_name: str):
         self.class_name = class_name
         self.methods = []
+        self.average_assertion_per_method = None
 
     def add_method(self, method: Methods):
         self.methods.append(method)

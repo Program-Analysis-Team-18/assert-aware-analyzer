@@ -94,6 +94,7 @@ def get_method_data(methodid: jpamb.jvm.Absolute[jpamb.jvm.MethodID]) -> tuple[s
 """TODO"""
 def start_static_analysis(assertion_mapping: Map):
     pass
+
 def setup():
     global JAVA_LANGUAGE
     JAVA_LANGUAGE = tree_sitter.Language(tree_sitter_java.language())
