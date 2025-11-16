@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 from tree_sitter import Point, Node, Tree
-
+from jpamb.jvm import Absolute, MethodID
 
 @dataclass
 class Parameter:
@@ -30,14 +30,16 @@ class Assertion:
 
 @dataclass
 class Methods:
-    method_name: str
+    method_id: Absolute[MethodID]
     parameters: List[Parameter]
     assertions: List[Assertion]
+    side_effecting: bool
     
-    def __init__(self, method_name: str, parameters: List[Parameter], assertions: List[Assertion]):
-        self.method_name = method_name
+    def __init__(self, method_id: Absolute[MethodID], parameters: List[Parameter], assertions: List[Assertion], side_effecting: bool):
+        self.method_id = method_id
         self.parameters = parameters
         self.assertions = assertions
+        self.side_effecting = side_effecting
 
 
 @dataclass
@@ -92,7 +94,7 @@ class Map:
             if not (cls.return_method(class_name)):
                 cls.add_method(method)
 
-    def print_map(self):
+    def print_mapping(self):
         for cls in self.classes:
             print(cls.class_name)
             for method in cls.methods:
