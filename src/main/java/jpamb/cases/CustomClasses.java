@@ -3,6 +3,7 @@ package jpamb.cases;
 import jpamb.utils.Case;
 
 import jpamb.cases.PositiveInteger;
+import jpamb.cases.PositiveInteger2Params;
 import jpamb.cases.ArrayInputClass;
 
 public class CustomClasses {
@@ -10,6 +11,11 @@ public class CustomClasses {
     @Case("() -> assertion error")
     public static void assertFalse() {
         assert false;
+    }
+
+    @Case("(new jpamb/cases/PositiveInteger2Params(1,2) -> ok")
+    public static void TwoInputsToConstructor(PositiveInteger2Params obj) {
+        return;
     }
 
     @Case("(5) -> ok")
@@ -20,7 +26,7 @@ public class CustomClasses {
         return;
     }
 
-    @Case("(new jpamb/cases/ArrayInputClass(1,2,3)) -> ok")
+    @Case("(new jpamb/cases/ArrayInputClass([I: 1,2,3])) -> ok")
     public static void TestArrayInput(ArrayInputClass arrClass) {
 
 

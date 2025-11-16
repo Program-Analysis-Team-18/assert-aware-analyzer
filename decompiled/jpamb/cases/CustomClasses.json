@@ -63,7 +63,7 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 8,
+            "line": 9,
             "offset": 0
           }
         ],
@@ -155,11 +155,11 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 12,
+            "line": 13,
             "offset": 0
           },
           {
-            "line": 13,
+            "line": 14,
             "offset": 6
           }
         ],
@@ -176,6 +176,65 @@
       "exceptions": [],
       "name": "assertFalse",
       "params": [],
+      "returns": {
+        "annotations": [],
+        "type": null
+      },
+      "typeparams": []
+    },
+    {
+      "access": [
+        "public",
+        "static"
+      ],
+      "annotations": [
+        {
+          "is_runtime_visible": true,
+          "type": "jpamb/utils/Case",
+          "values": {
+            "value": {
+              "type": "string",
+              "value": "(new jpamb/cases/PositiveInteger2Params(1,2) -> ok"
+            }
+          }
+        }
+      ],
+      "code": {
+        "annotations": [],
+        "bytecode": [
+          {
+            "offset": 0,
+            "opr": "return",
+            "type": null
+          }
+        ],
+        "exceptions": [],
+        "lines": [
+          {
+            "line": 18,
+            "offset": 0
+          }
+        ],
+        "max_locals": 1,
+        "max_stack": 0,
+        "stack_map": null
+      },
+      "default": null,
+      "exceptions": [],
+      "name": "TwoInputsToConstructor",
+      "params": [
+        {
+          "annotations": [],
+          "type": {
+            "annotations": [],
+            "args": [],
+            "inner": null,
+            "kind": "class",
+            "name": "jpamb/cases/PositiveInteger2Params"
+          },
+          "visible": true
+        }
+      ],
       "returns": {
         "annotations": [],
         "type": null
@@ -250,11 +309,11 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 17,
+            "line": 23,
             "offset": 0
           },
           {
-            "line": 20,
+            "line": 26,
             "offset": 5
           }
         ],
@@ -293,7 +352,7 @@
           "values": {
             "value": {
               "type": "string",
-              "value": "(new jpamb/cases/ArrayInputClass(1,2,3)) -> ok"
+              "value": "(new jpamb/cases/ArrayInputClass([I: 1,2,3])) -> ok"
             }
           }
         }
@@ -310,7 +369,7 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 27,
+            "line": 33,
             "offset": 0
           }
         ],
@@ -369,7 +428,7 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 33,
+            "line": 39,
             "offset": 0
           }
         ],
@@ -717,23 +776,23 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 39,
+            "line": 45,
             "offset": 0
           },
           {
-            "line": 40,
+            "line": 46,
             "offset": 5
           },
           {
-            "line": 41,
+            "line": 47,
             "offset": 20
           },
           {
-            "line": 50,
+            "line": 56,
             "offset": 25
           },
           {
-            "line": 57,
+            "line": 63,
             "offset": 37
           }
         ],
@@ -870,7 +929,7 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 8,
+            "line": 9,
             "offset": 0
           }
         ],
