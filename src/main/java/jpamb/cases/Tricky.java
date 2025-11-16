@@ -2,6 +2,7 @@ package jpamb.cases;
 
 import jpamb.utils.*;
 import static jpamb.utils.Tag.TagType.*;
+import jpamb.cases.PositiveInteger;
 
 public class Tricky {
 
@@ -20,18 +21,15 @@ public class Tricky {
   }
 
   public static void crashy(int x, int y, int z, char[] chars) {
+
     if (x > 10 && x < 50) {
       int[] bad = new int[-1];
     }
-
     if (y == 0) {
       z = 100 / y;
     }
 
-    if (z == x) {
-      int overflow = Integer.MAX_VALUE * Integer.MAX_VALUE;
-    }
-
+    // z 100, x = 12, y = 9
     if(z % 20 == 5) {
       if(x % y == 3) {
         int[] arr = new int[8];
@@ -85,4 +83,10 @@ public class Tricky {
     assert ints[2] == chars[6] + '\0';
     assert ints[10] == chars[15] + '\0';
   }
+
+  public static void PositiveIntegers(PositiveInteger x, PositiveInteger y)
+  {
+    assert x.get() + y.get() > 10;
+  }
 }
+

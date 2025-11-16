@@ -396,7 +396,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         objref = frame.stack.pop()
 
         if objref.value is None:
-            return "NullPointerException"
+            return InterpretationResult("NullPointerException", frame.pc.offset)
         obj = state.heap.get(objref.value)
         if obj is None:
             raise RuntimeError(f"Invalid object reference {objref}")
@@ -539,7 +539,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
             new_frame.pc += 1
             return state
-        return "ok"
+        return InterpretationResult("ok", frame.pc.offset)
 
     def _new(classname: jvm.ClassName):
         """
@@ -549,7 +549,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
         match classname.name:
             case 'java/lang/AssertionError':
-                return 'assertion error'
+                return InterpretationResult('assertion error', frame.pc.offset)
             case _:
 
 
@@ -622,7 +622,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
         array = list(state.heap[ref.value].value)
         if index.value >= len(array):
-            return 'out of bounds'
+            return InterpretationResult('out of bounds', frame.pc.offset)
 
         value = array[index.value]
 
@@ -822,6 +822,7 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
     logger.debug(f"Heap {heap}")
     return state
 
+
 def input_is_an_object() -> bool:
     input = sys.argv[2]
     class_input = re.search(r"\(new\s+([A-Za-z_]\w*)\(([^)]*)\)\)", input)
@@ -829,13 +830,21 @@ def input_is_an_object() -> bool:
     if class_input is not None:
         return True
     return False
+
+
 def interpret(method, inputs, verbose=False) -> (str, int):
     if not verbose:
         logger.remove()
-    mid, minput = jpamb.getcasefromparams(method, inputs)
+
     bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
-    initial_frame, heap = generate_initial_frame(mid, minput)
-    state = State(heap, Stack.empty().push(initial_frame))
+
+    try:
+        mid, minput = jpamb.getcasefromparams(method, inputs)
+    except ValueError as e:
+        return InterpretationResult(f"{e}", 0)
+
+    mininput_str = inputs
+    state = generate_initial_state(mid, minput, mininput_str, bc)
 
     for _ in range(100000):
         state = step(state, bc)
@@ -844,10 +853,11 @@ def interpret(method, inputs, verbose=False) -> (str, int):
     else:
         return InterpretationResult("timeout", state.frames.peek().pc.offset)
 
+
 if __name__ == "__main__":
     configure_logger()
 
-    bc = Bytecode(jpamb.Suite(), {})
+    bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
 
     mid, minput = jpamb.getcase()
     mininput_str = sys.argv[2]

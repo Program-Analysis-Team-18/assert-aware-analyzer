@@ -5,33 +5,60 @@ from typing import List
 from solutions.interpreter import interpret
 
 
+class CustomType:
+    def __init__(self, name, params):
+        self.name = name
+        self.init_params = params
+
+
+"""
+    A fuzzer that generates random or coverage-guided inputs for the JPAMB methods.
+
+    Usage: f = Fuzzer("jpamb.cases.Arrays.arraySpellsHello:([C)V", None, True)
+           f.fuzz()
+"""
 class Fuzzer:
-    def __init__(self, method: str, corpus: List, coveraged_based: bool):
+    def __init__(self, method: str, corpus: List = None, coveraged_based: bool = True, fuzz_for: int = 1000000):
         self.method = method
         self.coverage_based = coveraged_based
         self.method_params = self.parse_parameters(method)
         self.corpus = {0: self.random_input() if corpus is None else corpus}
+        self.fuzz_for = fuzz_for
         self.error_map = {}
 
-
+    # Parses JVM descriptors between ( and ) into a list like ["I", "[C"].
     def parse_parameters(self, method: str):
         params_start = method.index('(') + 1
         params_end = method.index(')')
         params = method[params_start:params_end]
 
         result = []
-        i = 0
-        while i < len(params):
-            if params[i] == '[':
-                i += 1
-                base = params[i]
-                i += 1
-                result.append("[" + base)
+        while len(params) > 0:
+            if params[0] == 'L':
+                name = params[1:params.find('<init>')]
+                ctor_params = params[params.find('<init>') + 6: params.find(';')]
+                j = 0
+                init_params = []
+                while j < len(ctor_params):
+                    if ctor_params[j] == '[':
+                        init_params.append("[" + ctor_params[j + 1])
+                        j += 2
+                    else:
+                        init_params.append(ctor_params[j])
+                        j += 1
+                result.append(CustomType(name, init_params))
+                i = params.find(';')
+                params = params[i+1:]
+            elif params[0] == '[':
+                result.append("[" + params[1])
+                params = params[2:]
             else:
-                result.append(params[i])
-                i += 1
+                result.append(params[0])
+                params = params[1:]
         return result
 
+    # Returns a random Python value for a primitive JVM type.
+    # Example: random_value("I") → 57
     def random_value(self, t: str):
         match t:
             case "I":
@@ -52,19 +79,36 @@ class Fuzzer:
                 return round(random.uniform(-10000, 10000), 3)
         return None
 
+    # Creates a random argument list for the method, including random arrays.
+    # Example: ["I","[C"] → [42, ['C','H','i']]
+    def random_array(self, t):
+        size = random.randint(0, 50)  # max random array size set to 50
+        arr = [self.random_value(t) for _ in range(size)]
+        arr.insert(0, t)
+        return arr
+
+    # Formats an internal argument list into the string format interpret(...) expects.
+    # ExampleL: [['C','H','i']] → "([C:'H','i'])"
     def random_input(self):
         randomized_input = []
         for t in self.method_params:
-            if t[0] == '[':
-                base_type = t[1]
-                size = random.randint(0, 50) # max random array size set to 50
-                arr = [self.random_value(base_type) for _ in range(size)]
-                arr.insert(0, base_type)
-                randomized_input.append(arr)
+            if isinstance(t, CustomType):
+                input_values = []
+                for v in t.init_params:
+                    if v.startswith('['):
+                        input_values.append(self.random_array(v[1]))
+                    else:
+                        input_values.append(self.random_value(v))
+                input_values.insert(0, t.name)
+                randomized_input.append(input_values)
+            elif t.startswith('['):
+                randomized_input.append(self.random_array(t[1]))
             else:
                 randomized_input.append(self.random_value(t))
         return randomized_input
 
+    # Formats an internal argument list into the string format interpret(...) expects.
+    # ExampleL: [['C','H','i']] → "([C:'H','i'])"
     def format_input(self, input):
         def format(x):
             if isinstance(x, str):
@@ -74,19 +118,19 @@ class Fuzzer:
             if isinstance(x, list):
                 base_type = x[0]
                 x.remove(base_type)
-                result =  f"[{base_type}:" + ",".join(format(v) for v in x) + "]"
+                if len(base_type) > 1:
+                    result = f"new {base_type}(" + ",".join(format(v) for v in x) + ")"
+                else:
+                    result =  f"[{base_type}:" + ",".join(format(v) for v in x) + "]"
                 x.insert(0, base_type)
                 return result
             return str(x)
 
         return "(" + ",".join(format(v) for v in input) + ")"
 
-    def remove_base_types_from_input_arrays(self, input):
-        for i, v in enumerate(input):
-            if isinstance(v, list):
-                input[i] = v[1:]
-        return input
-
+    # Mutates input arguments using either deterministic or havoc mutations.
+    # Example: [10] → [19]   # maybe adds +9
+    # ['C','H','i'] → ['C','i','H']  # maybe reversed
     def mutate(self, input):
         def deterministic(x):
             if isinstance(x, list):
@@ -103,7 +147,7 @@ class Fuzzer:
                 safe_chars = string.ascii_letters + string.digits  # only letters and digits
                 i = random.randrange(len(x))
                 c = chr(ord(x[i]) ^ (1 << random.randint(0, 6)))
-                c = x[:i] + c + x[i + 1:]
+                c = x[:i] + c + x[i+1:]
                 if c not in safe_chars:
                     c = random.choice(safe_chars)
                 return c
@@ -150,20 +194,35 @@ class Fuzzer:
         mutation = random.choice([havoc, deterministic])
 
         if(isinstance(input, list)):
-            for i, v in enumerate(input):
-                input[i] = mutation(input[i])
+            for i, _ in enumerate(input):
+                if isinstance(input[i], list) and len(input[i][0]) > 1:
+                    custom_type = input[i][0]
+                    input[i].remove(custom_type)
+                    for j, _ in enumerate(input[i]):
+                        input[i][j] = mutation(input[i][j])
+                    input[i].insert(0, custom_type)
+                else:
+                    input[i] = mutation(input[i])
             return input
         else:
             return mutation(input)
 
-
+    # Estimates how many bytes the value would take when serialized.
+    # Example: 123 → 3
+    # Example: ['C','A'] → approx 5–7
     def serialized_size_in_bytes(self, x):
-        #fuzzer
         if isinstance(x, list):
             # Byte structure: "[" + items + "]"
             size = 2  # for "[" and "]"
             for i, elem in enumerate(x):
-                size += self.serialized_size_in_bytes(elem)
+                if isinstance(elem, list) and len(elem[0]) > 1:
+                    size += 2
+                    j = 1
+                    while j < len(elem):
+                        size += self.serialized_size_in_bytes(elem[j])
+                        j += 1
+                else:
+                    size += self.serialized_size_in_bytes(elem)
                 if i > 0:
                     size += 1  # comma
             return size
@@ -178,9 +237,12 @@ class Fuzzer:
 
         return 0
 
+    # Runs the fuzzing loop:
+    # if coverage_based -> mutate corpus → track new coverage depth
+    # else random -> generate new random inputs
     def fuzz(self):
         if self.coverage_based:
-            for _ in range(100000):
+            for _ in range(self.fuzz_for):
                 input = self.mutate(deepcopy(random.choice(list(self.corpus.values()))))
                 output = interpret(self.method, self.format_input(input), False)
                 if output.depth not in self.corpus:
@@ -190,20 +252,22 @@ class Fuzzer:
                     if output.message != "ok":
                         self.error_map[output.message] = input
                 elif self.serialized_size_in_bytes(input) < self.serialized_size_in_bytes(self.corpus[output.depth]):
-                    print(f"Smaller input: {input} for depth: {output.depth}")
-                    print(f"{input} -> {output.message}")
+                    print(f"Smaller input: {input} for depth {output.depth} --> {output.message}")
                     self.corpus[output.depth] = input
-            print(self.error_map)
         else:
-            for _ in range(100000):
+            for _ in range(self.fuzz_for):
                 input = self.random_input()
                 output = interpret(method_id, self.format_input(input), False)
                 if(output.message != "ok"):
+                    self.error_map[output.depth] = input
                     print(f"{input} --> {output.message}:{output.depth}")
+        print(self.error_map)
 
 
-method_id = "jpamb.cases.Tricky.crashy:(III[C)V"
+# method_id = "jpamb.cases.Tricky.crashy:(III[C)V
+method_id = "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V"
 # method_id = "jpamb.cases.Arrays.arraySpellsHello:([C)V"
 # method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
-fuzzer = Fuzzer(method_id, None, True)
+# method_id = "jpamb.cases.Tricky.PositiveIntegers:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V"
+fuzzer = Fuzzer(method_id)
 fuzzer.fuzz()
