@@ -407,6 +407,12 @@ This is an example of using our interpreter with method that takes object as an 
 $ uv run solutions/interpreter.py "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V" "(new jpamb/cases/PositiveInteger(1))"
 ```
 
+And for two objects as input:
+```shell
+$ uv run solutions/interpreter.py "jpamb.cases.CustomClasses.TwoObjectsInput:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V" "(new jpamb/cases/PositiveInteger(20), new jpamb/cases/PositiveInteger(25))"
+```
+
+
 
 
 

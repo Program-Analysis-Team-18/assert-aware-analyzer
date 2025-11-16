@@ -27,6 +27,12 @@ public class CustomClasses {
         return;
     }
 
+    @Case("(new jpamb/cases/PositiveInteger(5), new jpamb/cases/PositiveInteger(10)) -> ok")
+    public static void TwoObjectsInput(PositiveInteger obj1, PositiveInteger obj2) {
+
+        return;
+    }
+
     @Case("(new jpamb/cases/PositiveInteger(5)) -> ok")
     public static void Withdraw(PositiveInteger amount) {
 

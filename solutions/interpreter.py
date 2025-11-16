@@ -783,8 +783,12 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
             #----------dup-----------
             current_frame.stack.push(current_frame.stack.peek())
             #---------push-----------
-            constuctor_parameters_str = re.search(r'\(([^()]+)\)', method_input_str)
-            push_value = return_value_given_str(constuctor_parameters_str.group(1))         #here, we need to push constructor input values (form actual user input) on to the stack
+            constuctor_parameters_str_all_matches = re.findall(r'\(([^()]+)\)', method_input_str)
+            assert len(constuctor_parameters_str_all_matches) > index, f"Not enough matches. Expected at least {index+1}, found {len(constuctor_parameters_str_all_matches)}"
+            
+            constructor_parameters_str = constuctor_parameters_str_all_matches[index]
+            
+            push_value = return_value_given_str(constructor_parameters_str)         #here, we need to push constructor input values (form actual user input) on to the stack
             current_frame.stack.push(push_value)
 
             #-------invoke special-------------

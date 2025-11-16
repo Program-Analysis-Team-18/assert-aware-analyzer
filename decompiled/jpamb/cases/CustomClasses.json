@@ -352,6 +352,76 @@
           "values": {
             "value": {
               "type": "string",
+              "value": "(new jpamb/cases/PositiveInteger(5), new jpamb/cases/PositiveInteger(10)) -> ok"
+            }
+          }
+        }
+      ],
+      "code": {
+        "annotations": [],
+        "bytecode": [
+          {
+            "offset": 0,
+            "opr": "return",
+            "type": null
+          }
+        ],
+        "exceptions": [],
+        "lines": [
+          {
+            "line": 33,
+            "offset": 0
+          }
+        ],
+        "max_locals": 2,
+        "max_stack": 0,
+        "stack_map": null
+      },
+      "default": null,
+      "exceptions": [],
+      "name": "TwoObjectsInput",
+      "params": [
+        {
+          "annotations": [],
+          "type": {
+            "annotations": [],
+            "args": [],
+            "inner": null,
+            "kind": "class",
+            "name": "jpamb/cases/PositiveInteger"
+          },
+          "visible": true
+        },
+        {
+          "annotations": [],
+          "type": {
+            "annotations": [],
+            "args": [],
+            "inner": null,
+            "kind": "class",
+            "name": "jpamb/cases/PositiveInteger"
+          },
+          "visible": true
+        }
+      ],
+      "returns": {
+        "annotations": [],
+        "type": null
+      },
+      "typeparams": []
+    },
+    {
+      "access": [
+        "public",
+        "static"
+      ],
+      "annotations": [
+        {
+          "is_runtime_visible": true,
+          "type": "jpamb/utils/Case",
+          "values": {
+            "value": {
+              "type": "string",
               "value": "(new jpamb/cases/PositiveInteger(5)) -> ok"
             }
           }
@@ -647,23 +717,23 @@
         "exceptions": [],
         "lines": [
           {
-            "line": 33,
+            "line": 39,
             "offset": 0
           },
           {
-            "line": 34,
+            "line": 40,
             "offset": 5
           },
           {
-            "line": 35,
+            "line": 41,
             "offset": 20
           },
           {
-            "line": 44,
+            "line": 50,
             "offset": 25
           },
           {
-            "line": 51,
+            "line": 57,
             "offset": 37
           }
         ],
