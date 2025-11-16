@@ -18,6 +18,8 @@ import dataclasses
 from contextlib import contextmanager
 from typing import IO
 
+import re
+
 
 class JpambScore:
     score: float
@@ -351,7 +353,10 @@ def interpret(suite, program, report, filter, with_python, timeout, stepwise):
                     program + (case.methodid.encode(), case.input.encode()),
                     timeout=timeout,
                 )
-                ret = out.splitlines()[-1].strip()
+                ret_undedited = out.splitlines()[-1].strip()
+                #added this small part because our interpreter returns ex ok:27 and it compares it against ok. So, here is regex that strips the :27 part so that comparison works
+                ret_match = re.match(r'^([^:]+)', ret_undedited)
+                ret = ret_match.group(1)
             except subprocess.TimeoutExpired:
                 ret = "*"
             except subprocess.CalledProcessError as e:
