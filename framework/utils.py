@@ -84,6 +84,19 @@ class Map:
         cls = self.return_class(class_name)
         if cls:
             cls.add_method(method)
+        else:
+            self.add_class(class_name)
+            cls = self.return_class(class_name)
+            if not (cls.return_method(class_name)):
+                cls.add_method(method)
+
+    def print_map(self):
+        for cls in self.classes:
+            print(cls.class_name)
+            for method in cls.methods:
+                print(method.method_name)
+                print(method.parameters)
+                print(method.assertions)
     
     def class_present(self, class_name: str) -> bool:
         for cls in self.classes:

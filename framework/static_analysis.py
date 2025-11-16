@@ -22,13 +22,14 @@ def parse_tree(srcfile: Path) -> tuple[Tree, bytes]:
 
 def get_class_query(class_name: str) -> Query:
     return Query(JAVA_LANGUAGE,
-        f="""
+        f"""
         (class_declaration 
             name: ((identifier) @class-name 
                 (#eq? @class-name "{class_name}"))) @class
         """,
     )
 
+"""Refactor"""
 def get_method_query(method_name: str):
     return Query(JAVA_LANGUAGE,
         f"""
@@ -60,7 +61,6 @@ def parse_parameters_data(method_name: str, method_node: Node, file_data: bytes)
 
 """Refactor"""
 def parse_assertion_data(method_node: Node, file_data: bytes) -> List[Assertion]:
-    print("assertion callled")
     assert_q = Query(JAVA_LANGUAGE, """(assert_statement) @assert""")
     assertion_list = []
 
@@ -78,7 +78,7 @@ def parse_assertion_data(method_node: Node, file_data: bytes) -> List[Assertion]
 def run_query( query: Query):
     pass
 
-def get_method_data(methodid: jpamb.jvm.AbsMethodID) -> tuple[str, Methods]:
+def get_method_data(methodid: jpamb.jvm.Absolute[jpamb.jvm.MethodID]) -> tuple[str, Methods]:
     srcfile = suite.sourcefile(methodid.classname)
     class_name = methodid.classname
     method_name = methodid.extension.name
@@ -89,12 +89,11 @@ def get_method_data(methodid: jpamb.jvm.AbsMethodID) -> tuple[str, Methods]:
     param_list = parse_parameters_data(method_name, method_node, file_data)
     assertion_list = parse_assertion_data(method_node, file_data)
     
-    return class_name, Methods(method_name, param_list, assertion_list)
+    return class_name.name, Methods(method_name, param_list, assertion_list)
 
-
-
-    
-    
+"""TODO"""
+def start_static_analysis(assertion_mapping: Map):
+    pass
 def setup():
     global JAVA_LANGUAGE
     JAVA_LANGUAGE = tree_sitter.Language(tree_sitter_java.language())
@@ -113,26 +112,12 @@ if __name__ == "__main__":
     path_file: Path = Path(".").resolve()
     suite = model.Suite(Path(path_file))
     
-    # Initialize the global assertion mapping
-    global assertion_mapping
+    # Initialize the assertion mapping
     assertion_mapping = Map()
     
     # We go through all methods in the suite
-    for methodid, correct in suite.case_methods():
-        class_name, method = get_method_data(methodid)
-        print(f"Class: {class_name}, Method: {method}")
-        #exit(0)
-        if assertion_mapping.return_class(class_name) is None:
-            class_obj = Classes(class_name)
-            assertion_mapping.add_class(class_obj)
-        else:
-            if assertion_mapping.return_class(class_name).return_method(method.method_name) is None:
-                assertion_mapping.return_class(class_name).add_method(method)
-                
-    print("Assertion Mapping:")
-    print(assertion_mapping)
-        # the first one jpamb.cases.Arrays.arrayContent:()V
-        #if (str(methodid)  == "jpamb.cases.Arrays.arrayContent:()V"):
-        #    print(f"methodid REACHED: {methodid}")
-        #    class_name, method = get_method_data(methodid)
-            
+    for method_id, correct in suite.case_methods():
+        class_name, method = get_method_data(method_id)
+        assertion_mapping.add_method_to_class(class_name, method)
+
+    start_static_analysis(assertion_mapping)
