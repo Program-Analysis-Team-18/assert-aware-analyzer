@@ -414,7 +414,7 @@ $ uv run solutions/interpreter.py "jpamb.cases.CustomClasses.TwoObjectsInput:(Lj
 
 With input as object which constructor requires two parameters:
 ```shell
-$ uv run solutions/interpreter.py "jpamb.cases.CustomClasses.TwoInputsToConstructor:(Ljpamb/cases/PositiveInteger2Params<init>III;)V" "(new jpamb/cases/PositiveInteger2Params(20, 50))"
+$ uv run solutions/interpreter.py "jpamb.cases.CustomClasses.TwoInputsToConstructor:(Ljpamb/cases/PositiveInteger2Params<init>II;)V" "(new jpamb/cases/PositiveInteger2Params(20, 50))"
 ```
 
 
