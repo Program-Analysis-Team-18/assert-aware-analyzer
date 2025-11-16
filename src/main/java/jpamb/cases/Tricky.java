@@ -2,6 +2,7 @@ package jpamb.cases;
 
 import jpamb.utils.*;
 import static jpamb.utils.Tag.TagType.*;
+import jpamb.cases.PositiveInteger;
 
 public class Tricky {
 
@@ -19,4 +20,73 @@ public class Tricky {
     }
   }
 
+  public static void crashy(int x, int y, int z, char[] chars) {
+
+    if (x > 10 && x < 50) {
+      int[] bad = new int[-1];
+    }
+    if (y == 0) {
+      z = 100 / y;
+    }
+
+    // z 100, x = 12, y = 9
+    if(z % 20 == 5) {
+      if(x % y == 3) {
+        int[] arr = new int[8];
+        arr[z] = 1;
+      }
+    }
+
+    if (z > 0) {
+        if(x % z == 137) {
+          int array[] = null;
+          array[1] = 0;
+        }
+    }
+
+    if(x % z == 37) {
+      if(y > 0) {
+        if(x % y != 0)
+          while(true) {}
+        }
+    }
+
+    if(x == 0) {
+      if(z < 0) {
+        assert false;
+      }
+    }
+
+    assert chars[0] == 'p' &&
+           chars[1] == 'r' &&
+           chars[2] == 'o' &&
+           chars[3] == 'g' &&
+           chars[4] == 'r' &&
+           chars[5] == 'a' &&
+           chars[6] == 'm' &&
+           chars[7] == 'a' &&
+           chars[8] == 'n' &&
+           chars[9] == 'a' &&
+           chars[10] == 'l' &&
+           chars[11] == 'y' &&
+           chars[12] == 's' &&
+           chars[13] == 'i' &&
+           chars[14] == 's';
+
+    return;
+  }
+
+  public static void charToInt(int[] ints, char[] chars) {
+    assert ints[0] == chars[0] + '\0';
+    assert ints[1] == chars[2] + '\0';
+    assert ints[3] == chars[4] + '\0';
+    assert ints[2] == chars[6] + '\0';
+    assert ints[10] == chars[15] + '\0';
+  }
+
+  public static void PositiveIntegers(PositiveInteger x, PositiveInteger y)
+  {
+    assert x.get() + y.get() > 10;
+  }
 }
+

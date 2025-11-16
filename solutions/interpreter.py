@@ -9,6 +9,7 @@ Sample execution:
 - `uv run jpamb interpret --stepwise --filter Simple.divideByN: solutions/interpreter.py`
 """
 import sys
+from pathlib import Path
 import re
 
 from dataclasses import dataclass
@@ -36,7 +37,7 @@ def wrap_value(value: any) -> jvm.Value:
             return jvm.Value.boolean(False)
         case _:
             raise TypeError(f"Do not know how to wrap {value!r}")
-        
+
 def return_value_given_str(input: str):
         arg = None
         if re.match(r"^([0-9]+)$", input):
@@ -63,9 +64,15 @@ def return_value_given_str(input: str):
         elif re.match(r"^([^0-9,])$", input):
             arg = jvm.Value.char(input)
         else:
-            raise ValueError("Unsupported type of input to the object's constructor")  
+            raise ValueError("Unsupported type of input to the object's constructor")
         return arg
 
+
+@dataclass
+class InterpretationResult:
+    def __init__(self, message: str, depth):
+        self.depth = depth
+        self.message = message
 
 
 @dataclass
@@ -193,7 +200,7 @@ def _new_get_obj_value(classname: jvm.ClassName):
     for f in class_info.get("fields", []):
         if f.get("static", False):
             continue
-        
+
         input_array = False
         field_name = f["name"]
         field_type = None
@@ -207,7 +214,7 @@ def _new_get_obj_value(classname: jvm.ClassName):
                 raise ValueError("Unknown json configuration")
         else:
             field_type = f["type"]["base"]
-        
+
         if not input_array:
             match field_type:
                 case "int":
@@ -231,7 +238,7 @@ def _new_get_obj_value(classname: jvm.ClassName):
                     elem_type = jvm.Reference()
             instance_fields[field_name] = jvm.Value.array(elem_type, [])
 
-    
+
     obj_value = jvm.Value(jvm.Object(classname), instance_fields)
     return obj_value
 
@@ -260,7 +267,7 @@ def _invoke_special_method(method: jvm.AbsMethodID, is_interface: bool, state: S
     if method.classname.name == "java/lang/Object" and method.methodid.name == "<init>":
         frame.pc += 1
         return state
-        
+
     new_frame = Frame.from_method(method)
     new_frame.pc = PC(method, 0)
 
@@ -270,19 +277,19 @@ def _invoke_special_method(method: jvm.AbsMethodID, is_interface: bool, state: S
 
     #params + reference - important especially for new classes
     param_count = len(method.methodid.params) + 1
-        
+
     args = []
     for _ in range(param_count):
         args.insert(0, frame.stack.pop())
-        
+
     for i, arg in enumerate(args):
         new_frame.locals[i] = arg
-        
+
 
     state.frames.push(new_frame)
     return state
 
-def step(state: State, bytecode: Bytecode) -> State | str:
+def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
     """
     Stepping function:
     bc ⊢ ⟨η,μ⟩ → ⟨η‾,μ‾⟩
@@ -330,7 +337,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         assert v1.type is jvm.Int(), f"expected int, but got {v1}"
         assert v2.type is jvm.Int(), f"expected int, but got {v2}"
         if v2.value == 0:
-            return "divide by zero"
+            return InterpretationResult("divide by zero", frame.pc.offset)
         frame.stack.push(jvm.Value.int(v1.value // v2.value))
         frame.pc += 1
         return state
@@ -344,7 +351,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         assert v1.type is jvm.Int(), f"expected int, but got {v1}"
         assert v2.type is jvm.Int(), f"expected int, but got {v2}"
         if v2.value == 0:
-            return "divide by zero"
+            return InterpretationResult("divide by zero", frame.pc.offset)
         vv1, vv2 = v1.value, v2.value
         frame.stack.push(jvm.Value.int(vv1 - (vv1 // vv2) * vv2))
         frame.pc += 1
@@ -376,7 +383,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         frame.stack.push(value)
         frame.pc += 1
         return state
-    
+
     def _get_field(field):
         """
         Pops an object reference from the stack.
@@ -389,7 +396,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         objref = frame.stack.pop()
 
         if objref.value is None:
-            return "NullPointerException"
+            return InterpretationResult("NullPointerException", frame.pc.offset)
         obj = state.heap.get(objref.value)
         if obj is None:
             raise RuntimeError(f"Invalid object reference {objref}")
@@ -466,7 +473,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         if m.classname.name == "java/lang/Object" and m.methodid.name == "<init>":
             frame.pc += 1
             return state
-        
+
         new_frame = Frame.from_method(method)
         new_frame.pc = PC(method, 0)
 
@@ -476,39 +483,39 @@ def step(state: State, bytecode: Bytecode) -> State | str:
 
         #params + reference - important especially for new classes
         param_count = len(method.methodid.params) + 1
-        
+
         args = []
         for _ in range(param_count):
             args.insert(0, frame.stack.pop())
-        
+
         for i, arg in enumerate(args):
             new_frame.locals[i] = arg
-        
+
 
         state.frames.push(new_frame)
         #important: we don't have frame.pc += 1, because return instruction later would do it for us
         return state
-    
+
     def _invoke_virtual(method: jvm.AbsMethodID):
         """
         The invoke virtual opcode for calling instance methods
         bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ', σ', ι'⟩
         """
-        
+
         new_frame = Frame.from_method(method)
         new_frame.pc = PC(method, 0)
 
         param_count = len(method.methodid.params) + 1
-        
+
         args = []
         for _ in range(param_count):
             args.insert(0, frame.stack.pop())
-        
+
         for i, arg in enumerate(args):
-            new_frame.locals[i] = arg        
+            new_frame.locals[i] = arg
 
         state.frames.push(new_frame)
-        
+
         return state
 
     def _return(return_type: jvm.Type | None):
@@ -532,7 +539,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
 
             new_frame.pc += 1
             return state
-        return "ok"
+        return InterpretationResult("ok", frame.pc.offset)
 
     def _new(classname: jvm.ClassName):
         """
@@ -542,12 +549,12 @@ def step(state: State, bytecode: Bytecode) -> State | str:
 
         match classname.name:
             case 'java/lang/AssertionError':
-                return 'assertion error'
+                return InterpretationResult('assertion error', frame.pc.offset)
             case _:
 
 
                 ref = max(state.heap.keys()) + 1 if state.heap else 0
-                
+
                 obj_value = _new_get_obj_value(classname)
 
                 state.heap[ref] = obj_value
@@ -584,7 +591,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         value, index, ref = frame.stack.pop(), frame.stack.pop(), frame.stack.pop()
 
         if ref.value is None:
-            return 'null pointer'
+            return InterpretationResult('null pointer', frame.pc.offset)
 
         assert ref.type is jvm.Int(), f'Array ref type mismatch {ref!r}'
         assert index.type is jvm.Int(), f'Index type mismatch {index.type}'
@@ -593,9 +600,13 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         old_array = state.heap[ref.value]
 
         if index.value >= len(old_array.value):
-            return 'out of bounds'
+            return InterpretationResult('out of bounds', frame.pc.offset)
 
         new_array = list(old_array.value)
+
+        if(index.value < 0):
+            return InterpretationResult("negative array size", frame.pc.offset)
+
         new_array[index.value] = value.value
 
         state.heap[ref.value] = jvm.Value.array(array_type, new_array)
@@ -611,7 +622,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
 
         array = list(state.heap[ref.value].value)
         if index.value >= len(array):
-            return 'out of bounds'
+            return InterpretationResult('out of bounds', frame.pc.offset)
 
         value = array[index.value]
 
@@ -641,7 +652,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         ref = frame.stack.pop()
 
         if ref.value is None:
-            return 'null pointer'
+            return InterpretationResult('null pointer', frame.pc.offset)
 
         array = state.heap[ref.value]
         length = len(array.value)
@@ -676,17 +687,17 @@ def step(state: State, bytecode: Bytecode) -> State | str:
 
     def _put_field(field: jvm.AbsFieldID):
         """Store value into an instance field"""
-        value = frame.stack.pop() 
-        obj_ref = frame.stack.pop()  
+        value = frame.stack.pop()
+        obj_ref = frame.stack.pop()
 
         if obj_ref.value is None:
             return 'null pointer'
-            
+
         heap_obj = state.heap[obj_ref.value]
-        
+
         if isinstance(heap_obj.value, dict):
             heap_obj.value[field.fieldid.name] = value
-        
+
         frame.pc += 1
         return state
 
@@ -722,7 +733,7 @@ def step(state: State, bytecode: Bytecode) -> State | str:
         case jvm.Load(type=jvm.Reference(), index=i): return _load(index=i)
         case jvm.Cast(from_=f, to_=t): return _cast(from_=f, to_=t)
         case jvm.Put(static=False, field=f): return _put_field(field=f)
-        case jvm.Put(static=True, field=f): 
+        case jvm.Put(static=True, field=f):
             raise NotImplementedError("putstatic not implemented")
 
         case unknown:
@@ -789,7 +800,7 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
                 if look_for_return:
                     break
                 state = step(state, bytecode)
-            
+
             #--- so now we skip the interpreter at all, and "force" the initial frame - since the constructor was already checked
             #----simply instate the initial frame again - with out heap
             initial_frame = Frame.from_method(method_id)
@@ -804,12 +815,13 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
                 initial_frame.locals[index] = jvm.Value.int(ref)
             else:
                 initial_frame.locals[index] = local
-            
+
             state = State(heap, Stack.empty().push(initial_frame))
 
     logger.debug(f"\n\nInitial frame local variable {initial_frame.locals}")
     logger.debug(f"Heap {heap}")
     return state
+
 
 def input_is_an_object() -> bool:
     input = sys.argv[2]
@@ -819,19 +831,42 @@ def input_is_an_object() -> bool:
         return True
     return False
 
+
+def interpret(method, inputs, verbose=False) -> (str, int):
+    if not verbose:
+        logger.remove()
+
+    bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
+
+    try:
+        mid, minput = jpamb.getcasefromparams(method, inputs)
+    except ValueError as e:
+        return InterpretationResult(f"{e}", 0)
+
+    mininput_str = inputs
+    state = generate_initial_state(mid, minput, mininput_str, bc)
+
+    for _ in range(100000):
+        state = step(state, bc)
+        if isinstance(state, InterpretationResult):
+            return state
+    else:
+        return InterpretationResult("timeout", state.frames.peek().pc.offset)
+
+
 if __name__ == "__main__":
     configure_logger()
 
-    bc = Bytecode(jpamb.Suite(), {})
+    bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
 
     mid, minput = jpamb.getcase()
     mininput_str = sys.argv[2]
     state = generate_initial_state(mid, minput,mininput_str,bc)
 
-    for x in range(100000):
+    for _ in range(100000):
         state = step(state, bc)
-        if isinstance(state, str):
-            print(state)
+        if isinstance(state, InterpretationResult):
+            print(f"{state.message}:{state.depth}")
             break
     else:
         print("*")
