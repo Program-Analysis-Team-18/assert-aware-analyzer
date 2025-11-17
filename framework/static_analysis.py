@@ -9,8 +9,7 @@ from jpamb import model
 from pathlib import Path
 from typing import List
 
-
-from utils import Parameter, Assertion, Methods, Classes, Map
+from utils import Parameter, Assertion, Method, Classes, Map
 
 """Refactor"""
 def parse_tree(srcfile: Path) -> tuple[Tree, bytes]:
@@ -75,6 +74,7 @@ def parse_assertion_data(method_node: Node, file_data: bytes) -> List[Assertion]
 
     return assertion_list
 
+"""Refactor"""
 def get_assertion_nodes(method_node: Node)-> List[Node]:
     assert_q = Query(JAVA_LANGUAGE, """(assert_statement) @assert""")
     assertion_node_list = []
@@ -87,50 +87,137 @@ def get_assertion_nodes(method_node: Node)-> List[Node]:
     
     return assertion_node_list
 
+"""Refactor"""
 def get_method_node(method_id: jpamb.jvm.Absolute[jpamb.jvm.MethodID]):
     srcfile = suite.sourcefile(method_id.classname)
     class_name = method_id.classname
     method_name = method_id.extension.name
-    
+
     tree, file_data = parse_tree(srcfile)
     method_node = QueryCursor(get_method_query(method_name)).captures(tree.root_node)["method"][0]
     return method_node
 
-# def has_side_effect(node: Node, class_of_function: Classes) -> bool:
-def has_side_effect(node: Node, method_id: jpamb.jvm.Absolute[jpamb.jvm.MethodID]) -> bool:
-    SIDE_EFFECT_NODES = ["update_expression", "assignment_expression"]
-    # 1. Node type directly indicates mutation
-    if node.type in SIDE_EFFECT_NODES:
-        return True
-    
-    # if node.type == "method_invocation":
-    #     method: Methods = class_of_function.return_method()
-    #     method.method_name()
-    #     # convert method_name to methodid
-    #     method_node: Node = get_method_node(method_id)
-    #     return has_side_effect(method_node, method_id)
-        
+"""Refactor"""
+def get_method_data(method_id: jpamb.jvm.Absolute[jpamb.jvm.MethodID]) -> tuple[str, Method]:
+    srcfile = suite.sourcefile(method_id.classname)
+    class_name = method_id.classname
+    method_name = method_id.extension.name
 
-    # 3. Recursively check children
-    for child in node.children:
-        if has_side_effect(child, method_id):
+    tree, file_data = parse_tree(srcfile)
+    method_node = get_method_node(method_id)
+
+    param_list = parse_parameters_data(method_name, method_node, file_data)
+    assertion_list = parse_assertion_data(method_node, file_data)
+
+    return class_name.name, Method(method_id, param_list, assertion_list)
+
+"""refactor merge with find_child"""
+def check_update_assignment_expression(assertion_node: Node) -> bool:
+    side_effect_nodes = ["update_expression", "assignment_expression"]
+
+    if assertion_node.type in side_effect_nodes:
+        return True
+
+    for child in assertion_node.children:
+        if check_update_assignment_expression(child):
             return True
 
     return False
 
-def get_method_data(method_id: jpamb.jvm.Absolute[jpamb.jvm.MethodID]) -> tuple[str, Methods]:
-    srcfile = suite.sourcefile(method_id.classname)
-    class_name = method_id.classname
-    method_name = method_id.extension.name
-    
-    tree, file_data = parse_tree(srcfile)
-    method_node = get_method_node(method_id)
-    
-    param_list = parse_parameters_data(method_name, method_node, file_data)
-    assertion_list = parse_assertion_data(method_node, file_data)
-    
-    return class_name.name, Methods(method_id, param_list, assertion_list, has_side_effect(method_node))
+"""Refactor"""
+def find_child(node: Node, matching_child: List[str]) -> List[Node]:
+    result: List[Node] = []
 
+    def walk(n: Node):
+        if n.type in matching_child:
+            result.append(n)
+
+        for child in n.children:
+            walk(child)
+
+    walk(node)
+    return result
+
+def get_method_invocation_chain(method: Method, cls: Classes):
+    result = []
+    visited = set()
+
+    srcfile = suite.sourcefile(method.method_id.classname)
+    tree, file_data = parse_tree(srcfile)
+    root = tree.root_node
+
+    inv_q = Query(
+        JAVA_LANGUAGE,
+        """
+        (method_invocation
+            name: (identifier) @invoked)
+        """
+    )
+
+    def explore(node):
+        captures = QueryCursor(inv_q).captures(node)
+
+        for capname, nodelist in captures.items():
+            for n in nodelist:
+                invoked_name = file_data[n.start_byte:n.end_byte].decode("utf8")
+
+                if not cls.method_present(invoked_name):
+                    continue
+
+                callee = cls.return_method(invoked_name)
+                mid = callee.method_id
+
+                if mid in visited:
+                    continue
+
+                visited.add(mid)
+                result.append(mid)
+
+                callee_node = QueryCursor(get_method_query(invoked_name)) \
+                                    .captures(root)["method"][0]
+
+                explore(callee_node)
+
+    start_node = QueryCursor(get_method_query(method.method_id.extension.name)) \
+                    .captures(root)["method"][0]
+
+    explore(start_node)
+    return result
+
+"""Refactor"""
+def check_invoked_method_side_effecting(invocation_chain: List[jpamb.jvm.Absolute[jpamb.jvm.MethodID]], cls: Classes):
+    for method_id in invocation_chain:
+        method = cls.return_method(method_id.extension.name)
+        if method.change_state:
+            return True
+    return False
+
+"""Refactor"""
+def update_methods_change_state_field(cls: Classes):
+    for method in cls.methods:
+        method.change_state = check_update_assignment_expression(get_method_node(method.method_id))
+
+    for method in cls.methods:
+        if not method.change_state:
+            invocation_chain = get_method_invocation_chain(method, cls)
+            method.change_state =  check_invoked_method_side_effecting(invocation_chain, cls)
+
+def classify_assertion(assertion: Assertion, cls: Classes) -> str:
+
+    #check for side-effect
+    if check_update_assignment_expression(assertion.assertion_node):
+        return "side_effect"
+    else:
+        for child in find_child(assertion.assertion_node, ["method_invocation"]):
+            method = cls.return_method((child.children[0].text).decode("utf8"))
+            if method.change_state:
+                return "side_effect"
+
+    #check for tautology and contradiction
+
+    return "unclassified"
+
+"""Refactor"""
 def average_assertions_per_method(cls: Classes):
     total_assertions = 0
     for method in cls.methods:
@@ -140,50 +227,18 @@ def average_assertions_per_method(cls: Classes):
     else:
         cls.average_assertion_per_method = 0.0
 
-def classify_assertion(assertion_node: Node, method_id: jpamb.jvm.Absolute[jpamb.jvm.MethodID]):
-    """
-    classify_assertion takes in an assertion node, recursively goes through it to check if there exists: update_expression or unary_expression or assignment_expression. If any of these exist, the assertion is classified as side-effect causing
-    """
-    # goal: return binary_expression or update_expression
-    if assertion_node.type != "assert_statement":
-        raise ValueError("the node is not an assertion node")
-    # if assertion_node
-    if has_side_effect(assertion_node, method_id): return True
-    else: return False
-
-def debug_print_assertion(method_id, assertion_node):
-    # Print header
-    print("====================================================")
-    print(f"Method: {method_id.classname}.{method_id.extension.name}")
-    print(f"method_id: {method_id}")
-    
-    # Classification
-    side = classify_assertion(assertion_node, method_id)
-    label = "side-effect" if side else "no-side-effect"
-    print(f"Classification: {label}")
-
-    # # Extract assert source text
-    # src = file_data[assertion_node.start_byte : assertion_node.end_byte].decode("utf8")
-    # print(f"Source: {src}")
-
-    # Tree-sitter AST (your version prints S-expr only via print(node))
-    print("AST:")
-    print(assertion_node)   # this shows the S-expression in *your* build
-
-    print("====================================================\n")
-
+"""Refactor"""
 def start_static_analysis(assertion_mapping: Map):
     
     #count average assertion per method
     for cls in assertion_mapping.classes:
         average_assertions_per_method(cls)
-    
+
     # Start assertion classification
-    #for cls in assertion_mapping.classes:
-    #    for method in cls.methods:
-    #        for assertion in method.assertions:
-    #            classify_assertion(assertion_node=assertion.assertion_node)
-    
+    for cls in assertion_mapping.classes:
+        for method in cls.methods:
+            for assertion in method.assertions:
+                assertion.classification = classify_assertion(assertion, cls)
 
 def setup():
     global JAVA_LANGUAGE
@@ -205,24 +260,16 @@ if __name__ == "__main__":
     
     # Initialize the assertion mapping
     assertion_mapping = Map()
-    assertion_node_list = []
-    
-    # We go through all methods in the suite
+
+    # We go through all methods in the suite to do a first mapping
     for method_id, correct in suite.case_methods():
         class_name, method = get_method_data(method_id)
         assertion_mapping.add_method_to_class(class_name, method)
-        
-        method_node = get_method_node(method_id)
-        assertion_node_list.extend(get_assertion_nodes(method_node))
+    # We update the change_state flag of the methods
+    for cls in assertion_mapping.classes:
+        update_methods_change_state_field(cls)
 
-        # assertion_mapping.print_mapping()
-        for assertion in assertion_node_list:
-            debug_print_assertion(method_id, assertion)
-        
-    for class_object in assertion_mapping.classes:
-        for method in class_object.methods:
-            method_id = method.method_id
-            for assertion in method:
-                classify_assertion(assertion.assertion_node, method_id)
-
+    assertion_mapping.print_mapping()
     start_static_analysis(assertion_mapping)
+    assertion_mapping.print_mapping()
+

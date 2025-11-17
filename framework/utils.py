@@ -29,42 +29,42 @@ class Assertion:
         
 
 @dataclass
-class Methods:
+class Method:
     method_id: Absolute[MethodID]
     parameters: List[Parameter]
     assertions: List[Assertion]
-    side_effecting: bool
+    change_state: bool
     
-    def __init__(self, method_id: Absolute[MethodID], parameters: List[Parameter], assertions: List[Assertion], side_effecting: bool):
+    def __init__(self, method_id: Absolute[MethodID], parameters: List[Parameter], assertions: List[Assertion]):
         self.method_id = method_id
         self.parameters = parameters
         self.assertions = assertions
-        self.side_effecting = side_effecting
+        self.change_state = False
 
 
 @dataclass
 class Classes:
     class_name: str
     average_assertion_per_method: float
-    methods: List[Methods]
+    methods: List[Method]
     
     def __init__(self, class_name: str):
         self.class_name = class_name
         self.methods = []
         self.average_assertion_per_method = None
 
-    def add_method(self, method: Methods):
+    def add_method(self, method: Method):
         self.methods.append(method)
         
-    def return_method(self, method_name: str) -> Methods:
+    def return_method(self, method_name: str) -> Method:
         for method in self.methods:
-            if method.method_name == method_name:
+            if method.method_id.extension.name == method_name:
                 return method
         return None
     
     def method_present(self, method_name: str) -> bool:
         for method in self.methods:
-            if method.method_name == method_name:
+            if method.method_id.extension.name == method_name:
                 return True
         return False
 
@@ -84,7 +84,7 @@ class Map:
                 return cls
         return None
     
-    def add_method_to_class(self, class_name: str, method: Methods):
+    def add_method_to_class(self, class_name: str, method: Method):
         cls = self.return_class(class_name)
         if cls:
             cls.add_method(method)
@@ -96,12 +96,32 @@ class Map:
 
     def print_mapping(self):
         for cls in self.classes:
-            print(cls.class_name)
+            print(f"\n=== Class: {cls.class_name} ===")
+            print(f"Average assertions per method: {cls.average_assertion_per_method}")
+            if not cls.methods:
+                print("  (No methods)")
             for method in cls.methods:
-                print(method.method_name)
-                print(method.parameters)
-                print(method.assertions)
-    
+                print(f"\n  Method: {method.method_id.extension.name}")
+                print(f"    Change-state: {method.change_state}")
+
+                # Parameters
+                if method.parameters:
+                    print("    Parameters:")
+                    for param in method.parameters:
+                        print(f"      - {param.name}: {param.type}")
+                else:
+                    print("    Parameters: None")
+
+                # Assertions
+                if method.assertions:
+                    print("    Assertions:")
+                    for assertion in method.assertions:
+                        start_line = assertion.absolute_start_line
+                        end_line = assertion.absolute_end_line
+                        print(f"      - {assertion.classification} (lines {start_line}-{end_line})")
+                else:
+                    print("    Assertions: None")
+
     def class_present(self, class_name: str) -> bool:
         for cls in self.classes:
             if cls.class_name == class_name:
