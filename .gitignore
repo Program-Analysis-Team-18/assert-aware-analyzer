@@ -7,7 +7,7 @@ target/test-classes/
 .project
 .settings
 .vscode
-decombiled/
+decompiled/
 target/
 __pycache__
 
