@@ -186,7 +186,7 @@ def get_method_invocation_chain(method: Method, cls: Classes):
 """Refactor"""
 def check_invoked_method_side_effecting(invocation_chain: List[jpamb.jvm.Absolute[jpamb.jvm.MethodID]], cls: Classes):
     for method_id in invocation_chain:
-        method = cls.return_method(method_id.extension.name)
+        method: Method = cls.return_method(method_id.extension.name)
         if method.change_state:
             return True
     return False
@@ -208,7 +208,7 @@ def classify_assertion(assertion: Assertion, cls: Classes) -> str:
         return "side_effect"
     else:
         for child in find_child(assertion.assertion_node, ["method_invocation"]):
-            method = cls.return_method((child.children[0].text).decode("utf8"))
+            method: Method = cls.return_method((child.children[0].text).decode("utf8"))
             if method.change_state:
                 return "side_effect"
 
@@ -272,6 +272,7 @@ if __name__ == "__main__":
     for method_id, correct in suite.case_methods():
         class_name, method = get_method_data(method_id)
         assertion_mapping.add_method_to_class(class_name, method)
+    # We have to loop through all the .java files to include or the methods that are not marked with the @case tag.
     # We update the change_state flag of the methods
     for cls in assertion_mapping.classes:
         update_methods_change_state_field(cls)
