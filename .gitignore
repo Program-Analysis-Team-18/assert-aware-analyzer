@@ -7,6 +7,8 @@ target/test-classes/
 .project
 .settings
 .vscode
+decombiled/
+target/
 __pycache__
 
 result.json

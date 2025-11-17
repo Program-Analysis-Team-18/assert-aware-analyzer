@@ -1,7 +1,9 @@
 package jpamb.cases;
+import jpamb.utils.Case;
 
 import jpamb.utils.*;
 import static jpamb.utils.Tag.TagType.*;
+
 
 public class Assertions {
     static int i;
@@ -45,16 +47,16 @@ public class Assertions {
         assert (arr[0] = 9) == 9; // assignment expression
     }
     
-    @Case("() -> side-effect")
-    @Tag({ ASSERTION })
-    public static void callToSideEffect() {
-        assert assertWithIncrement() == 42; // method call with side effects
-    }
+    // @Case("() -> side-effect")
+    // @Tag({ ASSERTION })
+    // public static void callToSideEffect() {
+    //     assert assertWithIncrement() == 42; // method call with side effects
+    // }
     
-    @Case("() -> side-effect")
-    @Tag({ ASSERTION })
-    public static void callToSideEffectRecursive() {
-        assert callToSideEffect() == 42; // method call with side effects
-    }
+    // @Case("() -> side-effect")
+    // @Tag({ ASSERTION })
+    // public static void callToSideEffectRecursive() {
+    //     assert callToSideEffect() == 42; // method call with side effects
+    // }
 
 }
