@@ -40,7 +40,7 @@ def wrap_value(value: any) -> jvm.Value:
 
 def return_value_given_str(input: str):
         arg = None
-        if re.match(r"^([0-9]+)$", input):
+        if re.match(r"^(-?[0-9]+)$", input):
             arg = jvm.Value.int(int(input))
         elif re.search(r'\[([IC]):\s*([^]]+)\]', input):
             arr_match = re.search(r'\[([IC]):\s*([^]]+)\]', input)
@@ -783,21 +783,29 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
             #----------dup-----------
             current_frame.stack.push(current_frame.stack.peek())
             #---------push-----------
-            constuctor_parameters_str = re.search(r'\(([^()]+)\)', method_input_str)
-            push_value = return_value_given_str(constuctor_parameters_str.group(1))         #here, we need to push constructor input values (form actual user input) on to the stack
-            current_frame.stack.push(push_value)
+            constuctor_parameters_str_all_matches = re.findall(r'\(([^()]+)\)', method_input_str)
+            assert len(constuctor_parameters_str_all_matches) > index, f"Not enough matches. Expected at least {index+1}, found {len(constuctor_parameters_str_all_matches)}"
+            constructor_parameters_str = constuctor_parameters_str_all_matches[index]
+
+            constructor_parameters_str_list = [p.strip() for p in constructor_parameters_str.split(',')]                    #it should push one parameter at the time  
+            push_values_types = []
+            for constructor_parameter_str in constructor_parameters_str_list:
+                push_value = return_value_given_str(constructor_parameter_str)
+                current_frame.stack.push(push_value)                                    #here, we need to push constructor input values (form actual user input) on to the stack
+                push_values_types.append(push_value.type.encode())
 
             #-------invoke special-------------
-            input_type = push_value.type.encode()
-            constructor_method_id_str = class_name_str + ".<init>:(" + input_type + ")V"        #for now, we assume that all constructors will return void
+            input_types_combined = "".join(push_values_types)
+            constructor_method_id_str = class_name_str + ".<init>:(" + input_types_combined + ")V"        #for now, we assume that all constructors will return void
             constructor_method_id = jvm.AbsMethodID.decode(constructor_method_id_str)
             state = _invoke_special_method(constructor_method_id,False, state, current_frame)
 
             #---execute the constructor
+            constructor_frame = state.frames.peek()
             for x in range(100000):
                 peek_frame = state.frames.peek()
                 look_for_return = re.match(r"return:V", str(bytecode[peek_frame.pc]))
-                if look_for_return:
+                if look_for_return and constructor_frame == peek_frame:
                     break
                 state = step(state, bytecode)
 

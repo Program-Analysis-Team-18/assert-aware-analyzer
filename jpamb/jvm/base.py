@@ -690,7 +690,7 @@ class ValueParser:
             ("OPEN_ARRAY", r"\[[IC]:"),
             ("CLOSE_ARRAY", r"\]"),
             ("INT", r"-?\d+"),
-            ("OBJECT", r"new [A-Za-z_./\$]+\([^)]*\)"), 
+            ("OBJECT", r"new [A-Za-z0-9_./\$]+\([^)]*\)"), 
             ("BOOL", r"true|false"),
             ("CHAR", r"'[^']'"),
             ("COMMA", r","),
@@ -787,32 +787,38 @@ class ValueParser:
         #use Input.decode_many() again ???
         #print(ValueParser.parse(args_str)[0].type)
 
-        arg = None
-        if re.match(r"^([0-9]+)$", args_str):
-            arg = Value.int(int(args_str))
-        elif re.search(r'\[([IC]):\s*([^]]+)\]', args_str):
-            arr_match = re.search(r'\[([IC]):\s*([^]]+)\]', args_str)
-            arr_type = arr_match.group(1)
-            arr_content = arr_match.group(2)
+        inputs = [item.strip() for item in args_str.split(",")]
 
-            cleaned = arr_content.strip('()').split(',')
-            args_str_list = [item.strip() for item in cleaned]
-            args_list = []
+        arg_list = []
+        for input in inputs:
+            arg = None
+            if re.match(r"^(-?[0-9]+)$", input):
+                arg = Value.int(int(input))
+            elif re.search(r'\[([IC]):\s*([^]]+)\]', input):
+                arr_match = re.search(r'\[([IC]):\s*([^]]+)\]', input)
+                arr_type = arr_match.group(1)
+                arr_content = arr_match.group(2)
 
-            if arr_type == 'I':
-                for integer in args_str_list:
-                    args_list.append(Value.int(int(integer)))
-                arg = Value.array(Int(), args_list)
-            elif arr_type == 'C':
-                for character in args_str_list:
-                    args_list.append(Value.char(character))
-                arg = Value.array(Char(), args_list)
+                cleaned = arr_content.strip('()').split(',')
+                args_list_array_str = [item.strip() for item in cleaned]
+                args_list_array = []
+
+                if arr_type == 'I':
+                    for integer in args_list_array_str:
+                        args_list_array.append(Value.int(int(integer)))
+                    arg = Value.array(Int(), args_list_array)
+                elif arr_type == 'C':
+                    for character in args_list_array_str:
+                        args_list_array.append(Value.char(character))
+                    arg = Value.array(Char(), args_list_array)
+                else:
+                    raise ValueError("Unsupported array type for object's constuctor input")
+            elif re.match(r"^([^0-9,])$", input):
+                arg = Value.char(input)
             else:
-                raise ValueError("Unsupported array type for object's constuctor input")
-        elif re.match(r"^([^0-9,])$", args_str):
-            arg = Value.char(args_str)
-        else:
-            raise ValueError("Unsupported type of input to the object's constructor")  
+                raise ValueError("Unsupported type of input to the object's constructor")  
+            arg_list.append(arg)
+            
 
 
         # check_if_integer = re.match(r"^([0-9]+)$", args_str)
@@ -821,7 +827,7 @@ class ValueParser:
         # arg = Value.int(int(args_str))
 
         arg_dict = {}
-        arg_dict["value"] = arg
+        arg_dict["value"] = arg_list
 
         classname = ClassName.decode(classname_str)
 
