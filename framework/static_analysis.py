@@ -138,6 +138,7 @@ def find_child(node: Node, matching_child: List[str]) -> List[Node]:
     walk(node)
     return result
 
+"""Refactor"""
 def get_method_invocation_chain(method: Method, cls: Classes):
     result = []
     visited = set()
@@ -173,13 +174,11 @@ def get_method_invocation_chain(method: Method, cls: Classes):
                 visited.add(mid)
                 result.append(mid)
 
-                callee_node = QueryCursor(get_method_query(invoked_name)) \
-                                    .captures(root)["method"][0]
+                callee_node = QueryCursor(get_method_query(invoked_name)).captures(root)["method"][0]
 
                 explore(callee_node)
 
-    start_node = QueryCursor(get_method_query(method.method_id.extension.name)) \
-                    .captures(root)["method"][0]
+    start_node = QueryCursor(get_method_query(method.method_id.extension.name)).captures(root)["method"][0]
 
     explore(start_node)
     return result
@@ -204,7 +203,7 @@ def update_methods_change_state_field(cls: Classes):
 
 def classify_assertion(assertion: Assertion, cls: Classes) -> str:
 
-    #check for side-effect
+    #check for side effect
     if check_update_assignment_expression(assertion.assertion_node):
         return "side_effect"
     else:
@@ -213,7 +212,15 @@ def classify_assertion(assertion: Assertion, cls: Classes) -> str:
             if method.change_state:
                 return "side_effect"
 
-    #check for tautology and contradiction
+        # check for tautology and contradiction if not already listed as side effect
+        not_useless_types = [
+            "identifier",
+            "field_access",
+            "array_access",
+            "method_invocation"
+        ]
+        if len(find_child(assertion.assertion_node, not_useless_types)) is 0:
+            return "useless"
 
     return "unclassified"
 

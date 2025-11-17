@@ -117,8 +117,7 @@ class Map:
                     print("    Assertions:")
                     for assertion in method.assertions:
                         start_line = assertion.absolute_start_line
-                        end_line = assertion.absolute_end_line
-                        print(f"      - {assertion.classification} (lines {start_line}-{end_line})")
+                        print(f"      - {assertion.classification} (line {start_line})")
                 else:
                     print("    Assertions: None")
 
