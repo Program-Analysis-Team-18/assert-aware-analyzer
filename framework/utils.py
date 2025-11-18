@@ -3,12 +3,6 @@ from typing import List
 from tree_sitter import Point, Node, Tree
 from jpamb.jvm import Absolute, MethodID
 
-@dataclass
-class SimpleMethodID:
-    name: str
-    class_name: str
-
-
 
 @dataclass
 class Parameter:
@@ -37,15 +31,19 @@ class Assertion:
 
 @dataclass
 class Method:
-    method_id: Absolute[MethodID]
+    method_name: str
+    method_node: Node
     parameters: List[Parameter]
     assertions: List[Assertion]
+    local_variables: List[Parameter]
     change_state: bool
     
-    def __init__(self, method_id: Absolute[MethodID], parameters: List[Parameter], assertions: List[Assertion]):
-        self.method_id = method_id
+    def __init__(self, method_name: str,  method_node: Node, parameters: List[Parameter], assertions: List[Assertion], local_variables: List[Parameter]):
+        self.method_name = method_name
+        self.method_node = method_node
         self.parameters = parameters
         self.assertions = assertions
+        self.local_variables = local_variables
         self.change_state = False
 
 
@@ -65,13 +63,13 @@ class Classes:
         
     def return_method(self, method_name: str) -> Method:
         for method in self.methods:
-            if method.method_id.extension.name == method_name:
+            if method.method_name == method_name:
                 return method
         return None
     
     def method_present(self, method_name: str) -> bool:
         for method in self.methods:
-            if method.method_id.extension.name == method_name:
+            if method.method_name == method_name:
                 return True
         return False
 
@@ -108,7 +106,7 @@ class Map:
             if not cls.methods:
                 print("  (No methods)")
             for method in cls.methods:
-                print(f"\n  Method: {method.method_id.extension.name}")
+                print(f"\n  Method: {method.method_name}")
                 print(f"    Change-state: {method.change_state}")
 
                 # Parameters

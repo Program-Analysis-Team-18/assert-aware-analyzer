@@ -9,9 +9,39 @@ from jpamb import model
 from pathlib import Path
 from typing import List
 
-from utils import Parameter, Assertion, Method, Classes, Map, SimpleMethodID
+from utils import Parameter, Assertion, Method, Classes, Map
 
-"""Refactor"""
+def parse_local_variables(method_node: Node, file_data: bytes) -> List[Parameter]:
+    local_params = []
+
+    local_q = Query(JAVA_LANGUAGE, """
+        (local_variable_declaration
+            type: (_) @vtype
+            declarator: (variable_declarator
+                name: (identifier) @vname))
+    """)
+
+    captures = QueryCursor(local_q).captures(method_node)
+
+    # Group captures by their nodes to maintain pairing
+    capture_list = []
+    for capname, nodes in captures.items():
+        for node in nodes:
+            capture_list.append((capname, node))
+
+    # Sort by byte position to maintain order
+    capture_list.sort(key=lambda x: x[1].start_byte)
+
+    current_type = None
+    for capname, node in capture_list:
+        if capname == "vtype":
+            current_type = file_data[node.start_byte:node.end_byte].decode("utf8")
+        elif capname == "vname":
+            var_name = file_data[node.start_byte:node.end_byte].decode("utf8")
+            local_params.append(Parameter(var_name, current_type))
+
+    return local_params
+
 def parse_tree(srcfile: Path) -> tuple[Tree, bytes]:
     with open(srcfile, "rb") as f:
         file_data: bytes = f.read()
@@ -19,7 +49,6 @@ def parse_tree(srcfile: Path) -> tuple[Tree, bytes]:
     
     return tree, file_data
 
-"""Refactor"""
 def get_class_query(class_name: str) -> Query:
     return Query(JAVA_LANGUAGE,
         f"""
@@ -29,7 +58,6 @@ def get_class_query(class_name: str) -> Query:
         """,
     )
 
-"""Refactor"""
 def get_method_query(method_name: str):
     return Query(JAVA_LANGUAGE,
         f"""
@@ -44,7 +72,6 @@ def get_method_queries():
         (method_declaration) @method
     """)
 
-"""Refactor"""
 def parse_parameters_data(method_name: str, method_node: Node, file_data: bytes) -> List[Parameter]:
     parameters_q = Query(JAVA_LANGUAGE, """(formal_parameters) @params""")
     
@@ -64,7 +91,6 @@ def parse_parameters_data(method_name: str, method_node: Node, file_data: bytes)
                 else: raise ValueError("a parameter is missing")
     return param_list
 
-"""Refactor"""
 def parse_assertion_data(method_node: Node, file_data: bytes) -> List[Assertion]:
     assert_q = Query(JAVA_LANGUAGE, """(assert_statement) @assert""")
     assertion_list = []
@@ -73,13 +99,12 @@ def parse_assertion_data(method_node: Node, file_data: bytes) -> List[Assertion]
         for assertion_node in nodelist:
             start_line, start_col = assertion_node.start_point
             end_line, end_col = assertion_node.end_point
-            # this will replaced by classify_assertion()
+
             classification: str = "unclassified"
             assertion_list.append(Assertion(start_line, end_line, assertion_node, classification))
 
     return assertion_list
 
-"""Refactor"""
 def get_assertion_nodes(method_node: Node)-> List[Node]:
     assert_q = Query(JAVA_LANGUAGE, """(assert_statement) @assert""")
     assertion_node_list = []
@@ -92,31 +117,14 @@ def get_assertion_nodes(method_node: Node)-> List[Node]:
     
     return assertion_node_list
 
-"""Refactor"""
-def get_method_node(method_id: jpamb.jvm.Absolute[jpamb.jvm.MethodID]):
-    srcfile = suite.sourcefile(method_id.classname)
-    class_name = method_id.classname
-    method_name = method_id.extension.name
-
-    tree, file_data = parse_tree(srcfile)
-    method_node = QueryCursor(get_method_query(method_name)).captures(tree.root_node)["method"][0]
-    return method_node
-
-"""Refactor"""
-def get_method_data(method_id: jpamb.jvm.Absolute[jpamb.jvm.MethodID]) -> tuple[str, Method]:
-    srcfile = suite.sourcefile(method_id.classname)
-    class_name = method_id.classname
-    method_name = method_id.extension.name
-
-    tree, file_data = parse_tree(srcfile)
-    method_node = get_method_node(method_id)
+def get_method_data(method_name: str, method_node: Node, file_data: bytes) -> Method:
 
     param_list = parse_parameters_data(method_name, method_node, file_data)
     assertion_list = parse_assertion_data(method_node, file_data)
+    local_variables = parse_local_variables(method_node, file_data)
 
-    return class_name.name, Method(method_id, param_list, assertion_list)
+    return Method(method_name, method_node, param_list, assertion_list, local_variables)
 
-"""refactor merge with find_child"""
 def check_update_assignment_expression(assertion_node: Node) -> bool:
     side_effect_nodes = ["update_expression", "assignment_expression"]
 
@@ -129,7 +137,6 @@ def check_update_assignment_expression(assertion_node: Node) -> bool:
 
     return False
 
-"""Refactor"""
 def find_child(node: Node, matching_child: List[str]) -> List[Node]:
     result: List[Node] = []
 
@@ -143,13 +150,12 @@ def find_child(node: Node, matching_child: List[str]) -> List[Node]:
     walk(node)
     return result
 
-"""Refactor"""
-def get_method_invocation_chain(method: Method, cls: Classes):
+def get_method_invocation_chain(method: Method, cls: Classes) -> List[str]:
     result = []
     visited = set()
 
-    srcfile = suite.sourcefile(method.method_id.classname)
-    tree, file_data = parse_tree(srcfile)
+    class_file_path = f"src/main/java/jpamb/cases/{cls.class_name}.java"
+    tree, file_data = parse_tree(Path(class_file_path))
     root = tree.root_node
 
     inv_q = Query(
@@ -171,7 +177,7 @@ def get_method_invocation_chain(method: Method, cls: Classes):
                     continue
 
                 callee = cls.return_method(invoked_name)
-                mid = callee.method_id
+                mid = callee.method_name
 
                 if mid in visited:
                     continue
@@ -183,38 +189,174 @@ def get_method_invocation_chain(method: Method, cls: Classes):
 
                 explore(callee_node)
 
-    start_node = QueryCursor(get_method_query(method.method_id.extension.name)).captures(root)["method"][0]
+    start_node = method.method_node
 
     explore(start_node)
     return result
 
-"""Refactor"""
-def check_invoked_method_side_effecting(invocation_chain: List[jpamb.jvm.Absolute[jpamb.jvm.MethodID]], cls: Classes):
-    for method_id in invocation_chain:
-        method: Method = cls.return_method(method_id.extension.name)
+def check_invoked_method_side_effecting(invocation_chain: List[str], cls: Classes):
+    for method_name in invocation_chain:
+        method: Method = cls.return_method(method_name)
         if method.change_state:
             return True
     return False
 
-"""Refactor"""
 def update_methods_change_state_field(cls: Classes):
     for method in cls.methods:
-        method.change_state = check_update_assignment_expression(get_method_node(method.method_id))
+        method.change_state = check_update_assignment_expression(method.method_node)
 
     for method in cls.methods:
         if not method.change_state:
             invocation_chain = get_method_invocation_chain(method, cls)
             method.change_state =  check_invoked_method_side_effecting(invocation_chain, cls)
 
-def classify_assertion(assertion: Assertion, cls: Classes) -> str:
+""""GPT to check"""
+def get_invocation_info(inv_node: Node, method, cls, file_data: bytes):
+    """
+    Returns all information about a method invocation:
+        - qualified_name: "obj.get" or "a.b.c.compute"
+        - method_name: "get"
+        - object_chain: ["obj"] or ["a","b","c"]
+        - object_type: Java type of the final receiver (from locals, params, fields)
+    """
+
+    def text(n: Node) -> str:
+        return file_data[n.start_byte:n.end_byte].decode("utf8")
+
+    # -------------------------------------------------------------------------
+    # Extract raw method name
+    # -------------------------------------------------------------------------
+    name_node = inv_node.child_by_field_name("name")
+    method_name = text(name_node)
+
+    # -------------------------------------------------------------------------
+    # Extract the object expression (identifier, field_access, etc.)
+    # -------------------------------------------------------------------------
+    obj_node = inv_node.child_by_field_name("object")
+    if obj_node is None:
+        # static call like ClassName.method()
+        return {
+            "qualified_name": method_name,
+            "method_name": method_name,
+            "object_chain": [],
+            "object_type": None,
+        }
+
+    # -------------------------------------------------------------------------
+    # Build full object chain: a.b.c
+    # -------------------------------------------------------------------------
+    def build_chain(node: Node):
+        """
+        Returns ["a","b","c"] for a.b.c
+        """
+        if node.type == "identifier":
+            return [text(node)]
+
+        if node.type == "field_access":
+            left = build_chain(node.child_by_field_name("object"))
+            right = text(node.child_by_field_name("field"))
+            return left + [right]
+
+        if node.type in ("this", "super"):
+            return [text(node)]
+
+        # Fallback: treat as single segment
+        return [text(node)]
+
+    object_chain = build_chain(obj_node)
+    qualified_name = ".".join(object_chain + [method_name])
+
+    # -------------------------------------------------------------------------
+    # Resolve type of the final object in chain
+    # -------------------------------------------------------------------------
+    def resolve_type(chain: list[str], method, cls):
+        """
+        Resolve a.b.c -- get type of the last element (c).
+        """
+        if not chain:
+            return None
+
+        current = chain[0]
+
+        # 1. method parameter?
+        for p in method.parameters:
+            if p.name == current:
+                current_type = p.type
+                break
+        else:
+            # 2. local variable?
+            if hasattr(method, "local_vars") and current in method.local_vars:
+                current_type = method.local_vars[current]
+            # 3. field?
+            elif hasattr(cls, "fields") and current in cls.fields:
+                current_type = cls.fields[current]
+            else:
+                return None  # cannot resolve first element
+
+        # For each next element, navigate the class fields
+        for segment in chain[1:]:
+            other_cls = cls.map.return_class(current_type)
+            if other_cls and hasattr(other_cls, "fields"):
+                current_type = other_cls.fields.get(segment)
+            else:
+                return None
+
+        return current_type
+
+    object_type = resolve_type(object_chain, method, cls)
+
+    # -------------------------------------------------------------------------
+    # Output structure
+    # -------------------------------------------------------------------------
+    return {
+        "qualified_name": qualified_name,
+        "method_name": method_name,
+        "object_chain": object_chain,
+        "object_type": object_type,
+    }
+
+""""Name to change?"""
+def get_obj_type(obj: str, params: List[Parameter], local: List[Parameter]):
+
+    for o in params:
+        if o.name == obj:
+            return o.type
+
+    for o in local:
+        if o.name == obj:
+            return o.type
+
+    return None
+
+"""Very messy, to refactor"""
+def classify_assertion(assertion: Assertion, assertion_mapping: Map, cls: Classes, method: Method) -> str:
+
+    tree, file_data = parse_tree(Path(f"src/main/java/jpamb/cases/{cls.class_name}.java"))
 
     #check for side effect
     if check_update_assignment_expression(assertion.assertion_node):
         return "side_effect"
     else:
         for child in find_child(assertion.assertion_node, ["method_invocation"]):
-            method: Method = cls.return_method((child.children[0].text).decode("utf8"))
-            if method.change_state:
+            call_info = get_invocation_info(child, method, cls,file_data)
+            method_check: Method = cls.return_method(call_info["method_name"])
+            if method_check is None:
+                obj = call_info["object_chain"][0]
+                obj_type = get_obj_type(obj, method.parameters,  method.local_variables)
+                obj_class = assertion_mapping.return_class(obj_type)
+                if obj == "balance":
+                    pass
+                if obj_class is None:
+                    continue
+                method_check = obj_class.return_method(call_info["method_name"])
+
+                if method_check is None:
+                    continue
+                if method_check.change_state:
+                    return "side_effect"
+
+                continue
+            if method_check.change_state:
                 return "side_effect"
 
         # check for tautology and contradiction if not already listed as side effect
@@ -224,12 +366,11 @@ def classify_assertion(assertion: Assertion, cls: Classes) -> str:
             "array_access",
             "method_invocation"
         ]
-        if len(find_child(assertion.assertion_node, not_useless_types)) is 0:
+        if len(find_child(assertion.assertion_node, not_useless_types)) == 0:
             return "useless"
 
     return "unclassified"
 
-"""Refactor"""
 def average_assertions_per_method(cls: Classes):
     total_assertions = 0
     for method in cls.methods:
@@ -239,7 +380,6 @@ def average_assertions_per_method(cls: Classes):
     else:
         cls.average_assertion_per_method = 0.0
 
-"""Refactor"""
 def start_static_analysis(assertion_mapping: Map):
     
     #count average assertion per method
@@ -250,31 +390,30 @@ def start_static_analysis(assertion_mapping: Map):
     for cls in assertion_mapping.classes:
         for method in cls.methods:
             for assertion in method.assertions:
-                assertion.classification = classify_assertion(assertion, cls)
+                assertion.classification = classify_assertion(assertion, assertion_mapping, cls, method)
 
-def get_method_nodes(srcfile: Path):
-    class_name = srcfile.name
+def from_class_get_method_nodes(class_file: Path, cls: Classes):
+    tree, file_data = parse_tree(class_file)
 
-    tree, file_data = parse_tree(srcfile)
-    
-    method_nodes_list = QueryCursor(get_method_queries()).captures(tree.root_node)["method"]
+    try:
+        method_nodes_list = QueryCursor(get_method_queries()).captures(tree.root_node)["method"]
+    except Exception:
+        method_nodes_list = []
+
     for method_node in method_nodes_list:
-        print(method_node)
-        break
+        method_name = method_node.child_by_field_name("name").text.decode("utf8")
+        cls.add_method(get_method_data(method_name, method_node, file_data))
 
-def parse_methods():
+def parse_classes(assertion_map: Map):
     root = "src/main/java/jpamb/cases/"
     java_files = list(Path(root).rglob("*.java"))
-    methodid_list: List[SimpleMethodID] = []
 
-    for file in java_files:
-        # /home/petteriraita/deveploment_files/assert-aware-analyzer/src/main/java/jpamb/cases/ArrayInputClass.java
-        if file.name == "ArrayInputClass.java":
-            break
-        print(file)
-        print(file.name)
-        get_method_nodes(file)
-        break
+    for class_file in java_files:
+        class_name = class_file.name.strip(".java")
+
+        assertion_mapping.add_class(class_name)
+        from_class_get_method_nodes(class_file, assertion_map.return_class(class_name))
+        pass
 
 def setup():
     global JAVA_LANGUAGE
@@ -297,20 +436,12 @@ if __name__ == "__main__":
     # Initialize the assertion mapping
     assertion_mapping = Map()
 
-    parse_methods()
+    parse_classes(assertion_mapping)
 
+    for cls in assertion_mapping.classes:
+        update_methods_change_state_field(cls)
 
-
-    # # We go through all methods in the suite to do a first mapping
-    # for method_id, correct in suite.case_methods():
-    #     class_name, method = get_method_data(method_id)
-    #     assertion_mapping.add_method_to_class(class_name, method)
-    # # We have to loop through all the .java files to include or the methods that are not marked with the @case tag.
-    # # We update the change_state flag of the methods
-    # for cls in assertion_mapping.classes:
-    #     update_methods_change_state_field(cls)
-
-    # assertion_mapping.print_mapping()
-    # start_static_analysis(assertion_mapping)
-    # assertion_mapping.print_mapping()
+    assertion_mapping.print_mapping()
+    start_static_analysis(assertion_mapping)
+    assertion_mapping.print_mapping()
 
