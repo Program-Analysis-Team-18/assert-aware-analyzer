@@ -4,6 +4,13 @@ from tree_sitter import Point, Node, Tree
 from jpamb.jvm import Absolute, MethodID
 
 @dataclass
+class SimpleMethodID:
+    name: str
+    class_name: str
+
+
+
+@dataclass
 class Parameter:
     name: str
     type: str

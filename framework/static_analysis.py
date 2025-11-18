@@ -9,7 +9,7 @@ from jpamb import model
 from pathlib import Path
 from typing import List
 
-from utils import Parameter, Assertion, Method, Classes, Map
+from utils import Parameter, Assertion, Method, Classes, Map, SimpleMethodID
 
 """Refactor"""
 def parse_tree(srcfile: Path) -> tuple[Tree, bytes]:
@@ -38,6 +38,11 @@ def get_method_query(method_name: str):
                 (#eq? @method-name "{method_name}"))) @method
         """,
     )
+
+def get_method_queries():
+    return Query(JAVA_LANGUAGE, """
+        (method_declaration) @method
+    """)
 
 """Refactor"""
 def parse_parameters_data(method_name: str, method_node: Node, file_data: bytes) -> List[Parameter]:
@@ -247,6 +252,30 @@ def start_static_analysis(assertion_mapping: Map):
             for assertion in method.assertions:
                 assertion.classification = classify_assertion(assertion, cls)
 
+def get_method_nodes(srcfile: Path):
+    class_name = srcfile.name
+
+    tree, file_data = parse_tree(srcfile)
+    
+    method_nodes_list = QueryCursor(get_method_queries()).captures(tree.root_node)["method"]
+    for method_node in method_nodes_list:
+        print(method_node)
+        break
+
+def parse_methods():
+    root = "src/main/java/jpamb/cases/"
+    java_files = list(Path(root).rglob("*.java"))
+    methodid_list: List[SimpleMethodID] = []
+
+    for file in java_files:
+        # /home/petteriraita/deveploment_files/assert-aware-analyzer/src/main/java/jpamb/cases/ArrayInputClass.java
+        if file.name == "ArrayInputClass.java":
+            break
+        print(file)
+        print(file.name)
+        get_method_nodes(file)
+        break
+
 def setup():
     global JAVA_LANGUAGE
     JAVA_LANGUAGE = tree_sitter.Language(tree_sitter_java.language())
@@ -268,16 +297,20 @@ if __name__ == "__main__":
     # Initialize the assertion mapping
     assertion_mapping = Map()
 
-    # We go through all methods in the suite to do a first mapping
-    for method_id, correct in suite.case_methods():
-        class_name, method = get_method_data(method_id)
-        assertion_mapping.add_method_to_class(class_name, method)
-    # We have to loop through all the .java files to include or the methods that are not marked with the @case tag.
-    # We update the change_state flag of the methods
-    for cls in assertion_mapping.classes:
-        update_methods_change_state_field(cls)
+    parse_methods()
 
-    assertion_mapping.print_mapping()
-    start_static_analysis(assertion_mapping)
-    assertion_mapping.print_mapping()
+
+
+    # # We go through all methods in the suite to do a first mapping
+    # for method_id, correct in suite.case_methods():
+    #     class_name, method = get_method_data(method_id)
+    #     assertion_mapping.add_method_to_class(class_name, method)
+    # # We have to loop through all the .java files to include or the methods that are not marked with the @case tag.
+    # # We update the change_state flag of the methods
+    # for cls in assertion_mapping.classes:
+    #     update_methods_change_state_field(cls)
+
+    # assertion_mapping.print_mapping()
+    # start_static_analysis(assertion_mapping)
+    # assertion_mapping.print_mapping()
 
