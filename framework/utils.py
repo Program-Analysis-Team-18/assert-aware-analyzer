@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List
 from tree_sitter import Point, Node, Tree
 from jpamb.jvm import Absolute, MethodID
+from pathlib import Path
 
 
 @dataclass
@@ -52,9 +53,12 @@ class Classes:
     class_name: str
     average_assertion_per_method: float
     methods: List[Method]
+    class_file_path: Path
+
     
-    def __init__(self, class_name: str):
+    def __init__(self, class_name: str, class_file_path: Path):
         self.class_name = class_name
+        self.class_file_path = class_file_path
         self.methods = []
         self.average_assertion_per_method = None
 
@@ -80,8 +84,8 @@ class Map:
     def __init__(self):
         self.classes = []
 
-    def add_class(self, class_name: str):
-        self.classes.append(Classes(class_name))
+    def add_class(self, class_name: str, class_file_path: Path):
+        self.classes.append(Classes(class_name, class_file_path))
     
     def return_class(self, class_name: str) -> Classes:
         for cls in self.classes:
@@ -89,15 +93,16 @@ class Map:
                 return cls
         return None
     
-    def add_method_to_class(self, class_name: str, method: Method):
-        cls = self.return_class(class_name)
-        if cls:
-            cls.add_method(method)
-        else:
-            self.add_class(class_name)
-            cls = self.return_class(class_name)
-            if not (cls.return_method(class_name)):
-                cls.add_method(method)
+    # Petteri: I think this is not required anymore. Can be deleted
+    # def add_method_to_class(self, class_name: str, method: Method):
+    #     cls = self.return_class(class_name)
+    #     if cls:
+    #         cls.add_method(method)
+    #     else:
+    #         self.add_class(class_name)
+    #         cls = self.return_class(class_name)
+    #         if not (cls.return_method(class_name)):
+    #             cls.add_method(method)
 
     def print_mapping(self):
         for cls in self.classes:

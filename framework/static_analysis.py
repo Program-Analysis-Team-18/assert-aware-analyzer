@@ -154,7 +154,7 @@ def get_method_invocation_chain(method: Method, cls: Classes) -> List[str]:
     result = []
     visited = set()
 
-    class_file_path = f"src/main/java/jpamb/cases/{cls.class_name}.java"
+    class_file_path = cls.class_file_path
     tree, file_data = parse_tree(Path(class_file_path))
     root = tree.root_node
 
@@ -331,7 +331,8 @@ def get_obj_type(obj: str, params: List[Parameter], local: List[Parameter]):
 """Very messy, to refactor"""
 def classify_assertion(assertion: Assertion, assertion_mapping: Map, cls: Classes, method: Method) -> str:
 
-    tree, file_data = parse_tree(Path(f"src/main/java/jpamb/cases/{cls.class_name}.java"))
+    tree, file_data = parse_tree(cls.class_file_path)
+    print(f"cls.class_file_path: {cls.class_file_path}")
 
     #check for side effect
     if check_update_assignment_expression(assertion.assertion_node):
@@ -410,8 +411,7 @@ def parse_classes(assertion_map: Map):
 
     for class_file in java_files:
         class_name = class_file.name.strip(".java")
-
-        assertion_mapping.add_class(class_name)
+        assertion_mapping.add_class(class_name, class_file)
         from_class_get_method_nodes(class_file, assertion_map.return_class(class_name))
         pass
 
@@ -444,4 +444,6 @@ if __name__ == "__main__":
     assertion_mapping.print_mapping()
     start_static_analysis(assertion_mapping)
     assertion_mapping.print_mapping()
+
+
 
