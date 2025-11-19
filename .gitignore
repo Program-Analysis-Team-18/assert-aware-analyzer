@@ -9,6 +9,7 @@ target/test-classes/
 .vscode
 decompiled/
 target/
+framework/class_finder.py
 __pycache__
 
 result.json

@@ -10,29 +10,35 @@ public class Assertions {
 
     // Testing the assert chain. 
     // Since c() has a side effect, both a() and b() should also be classified as side-effecting.
+    @Case("() -> side-effect")
     public void a() { 
         b(); 
     }
 
+    @Case("() -> side-effect")
     public void b() { 
         c(); 
     }
 
+    @Case("() -> side-effect")
     public void c() { 
         x = 5; 
     }
 
     // Testing the assert-with-call chain.
     // b1() is used inside an assert, but it still calls c1(), which has a side effect.
+    @Case("() -> side-effect")
     public void a1() { 
         assert b1() == 7; 
     }
 
+    @Case("() -> side-effect")
     public boolean b1() { 
         c1(); 
         return true;
     }
 
+    @Case("() -> side-effect")
     public void c1() { 
         x = 5; 
     }
