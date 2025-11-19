@@ -6,6 +6,10 @@ target/test-classes/
 .classpath
 .project
 .settings
+.vscode
+decompiled/
+target/
+framework/class_finder.py
 __pycache__
 
 result.json
