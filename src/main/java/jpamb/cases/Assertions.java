@@ -8,6 +8,35 @@ import static jpamb.utils.Tag.TagType.*;
 public class Assertions {
     static int i;
 
+    // Testing the assert chain. 
+    // Since c() has a side effect, both a() and b() should also be classified as side-effecting.
+    public void a() { 
+        b(); 
+    }
+
+    public void b() { 
+        c(); 
+    }
+
+    public void c() { 
+        x = 5; 
+    }
+
+    // Testing the assert-with-call chain.
+    // b1() is used inside an assert, but it still calls c1(), which has a side effect.
+    public void a1() { 
+        assert b1() == 7; 
+    }
+
+    public boolean b1() { 
+        c1(); 
+        return true;
+    }
+
+    public void c1() { 
+        x = 5; 
+    }
+
     @Case("() -> useless")
     @Tag({ ASSERTION })
     public static void assertLiteralTrue() {
