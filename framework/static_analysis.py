@@ -332,7 +332,6 @@ def get_obj_type(obj: str, params: List[Parameter], local: List[Parameter]):
 def classify_assertion(assertion: Assertion, assertion_mapping: Map, cls: Classes, method: Method) -> str:
 
     tree, file_data = parse_tree(cls.class_file_path)
-    print(f"cls.class_file_path: {cls.class_file_path}")
 
     #check for side effect
     if check_update_assignment_expression(assertion.assertion_node):
@@ -393,8 +392,16 @@ def start_static_analysis(assertion_mapping: Map):
             for assertion in method.assertions:
                 assertion.classification = classify_assertion(assertion, assertion_mapping, cls, method)
 
-def from_class_get_method_nodes(class_file: Path, cls: Classes):
-    tree, file_data = parse_tree(class_file)
+def from_class_get_method_nodes(cls: Classes):
+    """
+    from_class_get_method_nodes adds all methods from a class and adds them to the class object
+
+    Parameters
+    ----------
+    cls : Classes
+        the class for which method nodes are added
+    """
+    tree, file_data = parse_tree(cls.class_file_path)
 
     try:
         method_nodes_list = QueryCursor(get_method_queries()).captures(tree.root_node)["method"]
@@ -410,9 +417,10 @@ def parse_classes(assertion_map: Map):
     java_files = list(Path(root).rglob("*.java"))
 
     for class_file in java_files:
-        class_name = class_file.name.strip(".java")
-        assertion_mapping.add_class(class_name, class_file)
-        from_class_get_method_nodes(class_file, assertion_map.return_class(class_name))
+        # changed to use the safer .stem for file names
+        class_name:str = Path(class_file.name).stem
+        assertion_map.add_class(class_name, class_file)
+        from_class_get_method_nodes(assertion_map.return_class(class_name))
         pass
 
 def setup():
@@ -429,10 +437,6 @@ def setup():
 if __name__ == "__main__":
     setup()
 
-    # Resolve the path of the suite
-    path_file: Path = Path(".").resolve()
-    suite = model.Suite(Path(path_file))
-    
     # Initialize the assertion mapping
     assertion_mapping = Map()
 
