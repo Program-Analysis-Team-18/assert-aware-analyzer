@@ -751,6 +751,7 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
     initial_frame = Frame.from_method(method_id)
     heap = {}
     state = State(heap, Stack.empty().push(initial_frame))
+    locals_for_new_frame = []
 
     for index, value in enumerate(method_input.values):
         # match value:
@@ -763,6 +764,7 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
 
         #check if it is of type of custom class
         m = re.match(r"^L([A-Za-z0-9_/\$]+);$",str(value.type))
+
         if m is not None:
             #custom class found
             current_frame = state.frames.peek()
@@ -778,6 +780,7 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
             obj_value = _new_get_obj_value(class_name)
             heap[ref] = obj_value
             current_frame.locals[index] = jvm.Value.int(ref)        # it needs this part - to be able to read the reference later
+            locals_for_new_frame.append(jvm.Value.int(ref))
             current_frame.stack.push(jvm.Value.int(ref))
 
             #----------dup-----------
@@ -812,7 +815,9 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
             #--- so now we skip the interpreter at all, and "force" the initial frame - since the constructor was already checked
             #----simply instate the initial frame again - with out heap
             initial_frame = Frame.from_method(method_id)
-            initial_frame.locals[index] = jvm.Value.int(ref)
+            for index_in_locals_list, local in enumerate(locals_for_new_frame):
+                initial_frame.locals[index_in_locals_list] = local
+
             state = State(heap, Stack.empty().push(initial_frame))
 
         else:
@@ -852,7 +857,10 @@ def interpret(method, inputs, verbose=False) -> (str, int):
         return InterpretationResult(f"{e}", 0)
 
     mininput_str = inputs
-    state = generate_initial_state(mid, minput, mininput_str, bc)
+    try:
+        state = generate_initial_state(mid, minput, mininput_str, bc)
+    except Exception as e:
+        return InterpretationResult("generic error", state.frames.peek().pc.offset)
 
     for _ in range(100000):
         state = step(state, bc)
