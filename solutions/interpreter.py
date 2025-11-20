@@ -20,6 +20,9 @@ import jpamb
 from jpamb.model import Input
 from jpamb import jvm
 
+import z3
+import argparse
+
 
 def wrap_value(value: any) -> jvm.Value:
     """Parses the input value to a [jvm.Value] object"""
@@ -257,6 +260,56 @@ class State:
     """
     heap: dict[int, jvm.Value]
     frames: Stack[Frame]
+
+# --------- symbolic values ---------------
+@dataclass
+class SymValue:
+    """Represents a symbolic or concrete value"""
+    expr: z3.ExprRef | jvm.Value
+    
+    def is_symbolic(self) -> bool:
+        return isinstance(self.expr, z3.ExprRef)
+    
+    def is_concrete(self) -> bool:
+        return isinstance(self.expr, jvm.Value)
+
+@dataclass  # type: ignore
+class SymFrame:
+    """
+    The state of the JVM is a triplet:
+    ⟨λ, σ, ι⟩
+
+    Where:
+    - λ is the Locals that stores local variables of type 𝐕_σ
+    - σ is the Operational Stack
+    - ι is the Program Counter
+    """
+    locals: dict[int, SymValue]
+    stack: Stack[SymValue]
+    pc: PC
+
+    def __str__(self):
+        locals_str = ", ".join(f"{k}:{v}" for k, v in self.locals.items())
+        return f"<{{{locals_str}}}, {self.stack}, {self.pc}>"
+
+    @classmethod
+    def from_method(cls, method: jvm.AbsMethodID) -> "SymFrame":
+        """Returns an empty Frame object from the method id."""
+        return SymFrame({}, Stack.empty(), PC(method, 0))
+     
+@dataclass
+class SymState:
+    """Symbolic execution state"""
+    frames: Stack[SymFrame]
+    heap: dict[int, SymValue]
+
+#The constraints 
+@dataclass
+class SymPath:
+    path: list[z3.ExprRef] 
+
+# --------------------------------
+
 
 def _invoke_special_method(method: jvm.AbsMethodID, is_interface: bool, state: State, frame: Frame):
     """
@@ -642,6 +695,8 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         return state
 
     def _load(index: int):
+        assert index in frame.locals,f"invalid local variable index {index}, perhaphs the newly implemented method is not public static?"
+
         value = frame.locals[index]
         frame.stack.push(value)
 
@@ -844,6 +899,44 @@ def input_is_an_object() -> bool:
         return True
     return False
 
+# symbolic execution analysis
+def analyse(method_id: jvm.AbsMethodID, mininput: Input, max_depth: int) -> str:
+    initial_frame = SymFrame.from_method(method_id)
+    heap = {}
+    state = SymState(heap, Stack.empty().push(initial_frame))
+
+    # assuming only integers, create symbolic vars for all input - for current frame
+    # locals = z3.Ints(" ".join(i_name for i_name, _ in mininput))
+    # # create state.
+    # state = SymState.from_locals(locals)
+
+
+    # # Create a stack to do depth first search with.
+    # stack : list[tuple[PC, SymState, SymPath]] = [(pc, state, [])]
+
+    # # As long as the stack is not empty
+    # while stack:
+    #   # pop the end of the stack
+    #   (pc, state, path, n) = stack.pop(-1)
+
+    #   # Check if state does something we want to warn the user about.
+    #   if interesting(state):
+    #     return "found interesting state"
+
+    #   # otherwise create the list of next branches 
+    #   for (pc, state_, pathc) in step(pc, state):
+    #       # add new path constraints to the path
+    #       path_ = path + pathc
+
+    #       # check if path is reachable
+    #       if str(z3.check(path_)) != "sat": 
+    #         continue
+
+    #       # append stack if within limits
+    #       if n < max_depth:
+    #         stack.append((pc, state_, path_, n + 1))
+
+    return f"all is fine, uptil depth {max_depth}"
 
 def interpret(method, inputs, verbose=False) -> (str, int):
     if not verbose:
@@ -871,23 +964,38 @@ def interpret(method, inputs, verbose=False) -> (str, int):
 
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="Interpreter runner")
+    parser.add_argument('--analyse', action='store_true', help='Run in analysis mode')
+
+    parser.add_argument('function', type=str, help='Function to run')
+    parser.add_argument('args', type=str, help='Arguments for the function')
+
+    args_parser = parser.parse_args()
+
+    input_args_offset = 0
+    if args_parser.analyse:
+        input_args_offset = 1
+
     configure_logger()
 
     bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
-
-    mid, minput = jpamb.getcase()
-    mininput_str = sys.argv[2]
+    mid, minput = jpamb.getcase(input_args_offset)
+    mininput_str = sys.argv[input_args_offset+2]
     state = generate_initial_state(mid, minput,mininput_str,bc)
 
-    for _ in range(100000):
-        state = step(state, bc)
-        if isinstance(state, InterpretationResult):
-            print(f"{state.message}:{state.depth}")
-            break
+    if args_parser.analyse:
+        analyse(mid, minput, 10)
     else:
-        print("*")
+        for _ in range(100000):
+            state = step(state, bc)
+            if isinstance(state, InterpretationResult):
+                print(f"{state.message}:{state.depth}")
+                break
+        else:
+            print("*")
 
-    # state = step(state, bc)
-    # while isinstance(state, str):
-    #     print(state)
-    #     state = step(state, bc)
+        # state = step(state, bc)
+        # while isinstance(state, str):
+        #     print(state)
+        #     state = step(state, bc)
