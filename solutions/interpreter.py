@@ -300,8 +300,15 @@ class SymFrame:
 @dataclass
 class SymState:
     """Symbolic execution state"""
-    frames: Stack[SymFrame]
     heap: dict[int, SymValue]
+    frames: Stack[SymFrame]
+
+    def copy(self):
+        """Deep copy of the state"""
+        return SymState(
+            self.heap.copy(),
+            self.frames.copy()
+        )
 
 #The constraints 
 @dataclass
@@ -342,7 +349,7 @@ def _invoke_special_method(method: jvm.AbsMethodID, is_interface: bool, state: S
     state.frames.push(new_frame)
     return state
 
-def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
+def step(state: State | SymState, bytecode: Bytecode) -> list[tuple[State | SymState | InterpretationResult , list[z3.ExprRef]]]:
     """
     Stepping function:
     bc ⊢ ⟨η,μ⟩ → ⟨η‾,μ‾⟩
@@ -354,7 +361,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         """bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ, σ‾, ι‾⟩"""
         frame.stack.push(value)
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _load(index):
         """
@@ -364,7 +371,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         assert value.type is jvm.Int() or jvm.Boolean()
         frame.stack.push(value)
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _binary_add():
         """bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ, σ‾, ι‾⟩"""
@@ -373,7 +380,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         assert v2.type is jvm.Int(), f"expected int, but got {v2}"
         frame.stack.push(jvm.Value.int(v1.value + v2.value))
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _binary_sub():
         """bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ, σ‾, ι‾⟩"""
@@ -382,18 +389,19 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         assert v2.type is jvm.Int(), f"expected int, but got {v2}"
         frame.stack.push(jvm.Value.int(v1.value - v2.value))
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _binary_div():
         """bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ, σ‾, ι‾⟩"""
         v2, v1 = frame.stack.pop(), frame.stack.pop()
         assert v1.type is jvm.Int(), f"expected int, but got {v1}"
         assert v2.type is jvm.Int(), f"expected int, but got {v2}"
-        if v2.value == 0:
-            return InterpretationResult("divide by zero", frame.pc.offset)
+        constraints = [v2.value == 0]
+        if constraints[0]:
+            return [(InterpretationResult("divide by zero", frame.pc.offset), [])]
         frame.stack.push(jvm.Value.int(v1.value // v2.value))
         frame.pc += 1
-        return state
+        return state , constraints
 
     def _binary_rem():
         """
@@ -403,12 +411,13 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         v2, v1 = frame.stack.pop(), frame.stack.pop()
         assert v1.type is jvm.Int(), f"expected int, but got {v1}"
         assert v2.type is jvm.Int(), f"expected int, but got {v2}"
-        if v2.value == 0:
-            return InterpretationResult("divide by zero", frame.pc.offset)
+        constraints = [v2.value == 0]
+        if constraints[0] == 0:
+            return [(InterpretationResult("divide by zero", frame.pc.offset), [])]
         vv1, vv2 = v1.value, v2.value
         frame.stack.push(jvm.Value.int(vv1 - (vv1 // vv2) * vv2))
         frame.pc += 1
-        return state
+        return state , constraints
 
     def _binary_mul():
         """bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ, σ‾, ι‾⟩"""
@@ -418,14 +427,14 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
         frame.stack.push(jvm.Value.int(v1.value * v2.value))
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _dup():
         """bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ, σ‾, ι‾⟩"""
         value = frame.stack.peek()
         frame.stack.push(value)
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _get_static(field):
         """
@@ -435,7 +444,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         value = bytecode.get_static_field(frame.pc, field)
         frame.stack.push(value)
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _get_field(field):
         """
@@ -449,7 +458,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         objref = frame.stack.pop()
 
         if objref.value is None:
-            return InterpretationResult("NullPointerException", frame.pc.offset)
+            return [(InterpretationResult("NullPointerException", frame.pc.offset), [])]
         obj = state.heap.get(objref.value)
         if obj is None:
             raise RuntimeError(f"Invalid object reference {objref}")
@@ -459,7 +468,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         frame.stack.push(v)
 
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _if(condition: str, target: int, ifz: bool = False):
         """
@@ -496,7 +505,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
                 raise NotImplementedError(f"Unknown condition: {unknown!r}")
 
         frame.pc.offset = target if jump else frame.pc.offset + 1
-        return state
+        return [(state , [])]
 
     def _invoke_static(method: jvm.AbsMethodID):
         """The invoke static opcode for calling static methods
@@ -516,7 +525,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
             new_frame.locals[index] = local
 
         state.frames.push(new_frame)
-        return state
+        return [(state , [])]
     def _invoke_special(method: jvm.AbsMethodID, is_interface: bool):
         """
         The invoke special opcode for calling constructors, private methods, and superclass methods.
@@ -525,7 +534,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
         if m.classname.name == "java/lang/Object" and m.methodid.name == "<init>":
             frame.pc += 1
-            return state
+            return [(state , [])]
 
         new_frame = Frame.from_method(method)
         new_frame.pc = PC(method, 0)
@@ -547,7 +556,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
         state.frames.push(new_frame)
         #important: we don't have frame.pc += 1, because return instruction later would do it for us
-        return state
+        return [(state , [])]
 
     def _invoke_virtual(method: jvm.AbsMethodID):
         """
@@ -569,7 +578,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
         state.frames.push(new_frame)
 
-        return state
+        return [(state , [])]
 
     def _return(return_type: jvm.Type | None):
         """
@@ -591,8 +600,8 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
                 new_frame.stack.push(value)
 
             new_frame.pc += 1
-            return state
-        return InterpretationResult("ok", frame.pc.offset)
+            return [(state , [])]
+        return [(InterpretationResult("ok", frame.pc.offset), [])]
 
     def _new(classname: jvm.ClassName):
         """
@@ -602,7 +611,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
         match classname.name:
             case 'java/lang/AssertionError':
-                return InterpretationResult('assertion error', frame.pc.offset)
+                return [(InterpretationResult('assertion error', frame.pc.offset), [])]
             case _:
 
 
@@ -615,7 +624,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
                 frame.stack.push(jvm.Value.int(ref))
                 frame.pc += 1
 
-                return state
+                return [(state , [])]
 
     def _new_array(array_type: jvm.Type):
         assert array_type is jvm.Int(), f'NewArray {array_type} not handled'
@@ -631,20 +640,20 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
         frame.stack.push(jvm.Value.int(ref))
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _store(index: int):
         value = frame.stack.pop()
         frame.locals[index] = value
 
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _array_store(array_type: jvm.Type):
         value, index, ref = frame.stack.pop(), frame.stack.pop(), frame.stack.pop()
 
         if ref.value is None:
-            return InterpretationResult('null pointer', frame.pc.offset)
+            return [(InterpretationResult('null pointer', frame.pc.offset), [])]
 
         assert ref.type is jvm.Int(), f'Array ref type mismatch {ref!r}'
         assert index.type is jvm.Int(), f'Index type mismatch {index.type}'
@@ -653,19 +662,19 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         old_array = state.heap[ref.value]
 
         if index.value >= len(old_array.value):
-            return InterpretationResult('out of bounds', frame.pc.offset)
+            return [(InterpretationResult('out of bounds', frame.pc.offset), [])]
 
         new_array = list(old_array.value)
 
         if(index.value < 0):
-            return InterpretationResult("negative array size", frame.pc.offset)
+            return [(InterpretationResult("negative array size", frame.pc.offset), [])]
 
         new_array[index.value] = value.value
 
         state.heap[ref.value] = jvm.Value.array(array_type, new_array)
 
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _array_load(array_type: jvm.Type):
         index, ref = frame.stack.pop(), frame.stack.pop()
@@ -675,7 +684,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
         array = list(state.heap[ref.value].value)
         if index.value >= len(array):
-            return InterpretationResult('out of bounds', frame.pc.offset)
+            return [(InterpretationResult('out of bounds', frame.pc.offset), [])]
 
         value = array[index.value]
 
@@ -688,11 +697,11 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
                 raise NotImplementedError(f"Unknown array type: {array_type}")
 
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _goto(target: int):
         frame.pc.offset = target
-        return state
+        return [(state , [])]
 
     def _load(index: int):
         assert index in frame.locals,f"invalid local variable index {index}, perhaphs the newly implemented method is not public static?"
@@ -701,13 +710,13 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         frame.stack.push(value)
 
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _array_length():
         ref = frame.stack.pop()
 
         if ref.value is None:
-            return InterpretationResult('null pointer', frame.pc.offset)
+            return [(InterpretationResult('null pointer', frame.pc.offset), [])]
 
         array = state.heap[ref.value]
         length = len(array.value)
@@ -715,7 +724,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         frame.stack.push(jvm.Value.int(length))
 
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _incr(index: int, amount: int):
         assert frame.locals[index].type is jvm.Int(), 'Incr type mismatch'
@@ -726,7 +735,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         frame.locals[index] = jvm.Value.int(new_value)
 
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _cast(from_: jvm.Type, to_: jvm.Type):
         match from_, to_:
@@ -738,7 +747,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
                 raise NotImplementedError(f'From {from_} To {to_} not handled')
 
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     def _put_field(field: jvm.AbsFieldID):
         """Store value into an instance field"""
@@ -746,7 +755,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         obj_ref = frame.stack.pop()
 
         if obj_ref.value is None:
-            return 'null pointer'
+            return 'null pointer', []
 
         heap_obj = state.heap[obj_ref.value]
 
@@ -754,7 +763,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
             heap_obj.value[field.fieldid.name] = value
 
         frame.pc += 1
-        return state
+        return [(state , [])]
 
     logger.info(f"-- Bytecode[{frame.pc}]: {bytecode[frame.pc]}")
     logger.info(f"Op Stack[{frame.stack}]")
@@ -900,32 +909,44 @@ def input_is_an_object() -> bool:
     return False
 
 # symbolic execution analysis
-def analyse(method_id: jvm.AbsMethodID, mininput: Input, max_depth: int) -> str:
+def analyse(method_id: jvm.AbsMethodID, inputs: list[tuple[str, jvm.Type]], max_depth: int, bytecode: Bytecode) -> str:
     initial_frame = SymFrame.from_method(method_id)
     heap = {}
+
+    # assuming only integers for now, create symbolic vars for all input - for current frame
+    for index, input in enumerate(inputs):
+        initial_frame.locals[index] = z3.Int(f"{input[0]}")
+
     state = SymState(heap, Stack.empty().push(initial_frame))
 
-    # assuming only integers, create symbolic vars for all input - for current frame
-    # locals = z3.Ints(" ".join(i_name for i_name, _ in mininput))
-    # # create state.
-    # state = SymState.from_locals(locals)
+    path_class = SymPath([])
+    path_class.path = []
 
+    # Create a stack to do depth first search with.
+    #we do not need seperate PC as it is already included in the top frame of state
+    stack : list[tuple[SymState, SymPath, int]] = [(state, path_class, 0)]
 
-    # # Create a stack to do depth first search with.
-    # stack : list[tuple[PC, SymState, SymPath]] = [(pc, state, [])]
+    def interesting(interesting_state: SymState, interesting_path: SymPath):
+        #TODO: maybe when exception is thrown?
+        return
 
-    # # As long as the stack is not empty
-    # while stack:
-    #   # pop the end of the stack
-    #   (pc, state, path, n) = stack.pop(-1)
+    # As long as the stack is not empty
+    while stack:
+        # pop the end of the stack
+        (current_state, curpath_path, current_depth) = stack.pop(-1)
 
-    #   # Check if state does something we want to warn the user about.
-    #   if interesting(state):
-    #     return "found interesting state"
+        issue = interesting(current_state, curpath_path)
+        if issue:
+            return f"Found an interesting state {issue}"
+        
+        try:
+            next_states, _ = step(current_state, bytecode)     #getting next possible states
+        except Exception as e:
+            return InterpretationResult(f"Error during setp {e}")
 
-    #   # otherwise create the list of next branches 
-    #   for (pc, state_, pathc) in step(pc, state):
-    #       # add new path constraints to the path
+      # otherwise create the list of next branches 
+        # for (pc, state_, pathc) in next_state:
+            # add new path constraints to the path
     #       path_ = path + pathc
 
     #       # check if path is reachable
@@ -956,7 +977,8 @@ def interpret(method, inputs, verbose=False) -> (str, int):
         return InterpretationResult("generic error", state.frames.peek().pc.offset)
 
     for _ in range(100000):
-        state = step(state, bc)
+        possible_states = step(state, bc)
+        state, _ = possible_states[0]
         if isinstance(state, InterpretationResult):
             return state
     else:
@@ -985,10 +1007,14 @@ if __name__ == "__main__":
     state = generate_initial_state(mid, minput,mininput_str,bc)
 
     if args_parser.analyse:
-        analyse(mid, minput, 10)
+        #we need to determiny types of input and their number ...
+        analyse_method_input = [("a", jvm.Int)]
+
+        analyse(mid, analyse_method_input, 10, bc)
     else:
         for _ in range(100000):
-            state = step(state, bc)
+            possible_states = step(state, bc)
+            state, _ = possible_states[0]
             if isinstance(state, InterpretationResult):
                 print(f"{state.message}:{state.depth}")
                 break
