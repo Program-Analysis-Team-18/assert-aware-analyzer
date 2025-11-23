@@ -1,6 +1,6 @@
 import shutil  # shell utilities
 from pathlib import Path
-import static_analysis
+from static_analysis import Map, Classes
 
 def copy_class_files():
     """
@@ -14,21 +14,52 @@ def copy_class_files():
     for class_file in list(root.rglob("*.java")):
         shutil.copyfile(str(class_file), str(out / class_file.name))
 
-def add_comments_to_file(class_file: Path):
-    print(f"class_file.resolve(): {class_file.resolve()}")
+def add_comments_to_file(class_file: Classes):
+    BASE = Path(__file__).resolve().parent.parent
+    out = Path(str(BASE / "annotated_output_files"))
+    class_file_path: Path = BASE / "annotated_output_files" / f"{class_file.class_name}.java"
+    print(f"class_file_path: {class_file_path}")
 
-    # with open(class_file, "a") as f:
-    #     f.write("Hello")
-def comment_all_files():
-    root = Path("src/main/java/jpamb/cases")
+    with open(class_file_path, "a") as f:
+        f.write("Hello")
+    # add the assesrtion per method to a new file, then append the old file
+    avg = class_file.average_assertion_per_method
+    if avg >= 2:
+        prependix = f"// The file has on average {avg} assertions per method. This is sufficient"
+    else:  prependix = f"// The file has on average {avg} assertions per method. This is not sufficient\n"
+    old_file = class_file_path.read_text()
+    class_file_path.write_text(prependix + old_file)
 
-    for class_file in list(root.rglob("*.java"))[:1]:
-        add_comments_to_file(class_file)
+def comment_all_files(assertion_mapping):
+    root = Path("annotated_output_files")
+    class_list: list[Classes] = assertion_mapping.classes
+    for cf in class_list:
+        add_comments_to_file(cf)
+    
 
+
+def validate_mapping(assertion_mapping):
+    """
+    validate_mapping goes through the mapping and the annotated_output_files, then it confirms that those classes are the exact same
+    """
+    assertion_classes = [cf.class_name for cf in assertion_mapping.classes]
+    root = Path("annotated_output_files")
+    current_classes = [Path(class_file.name).stem for class_file in list(root.rglob("*.java"))]
+    # print(f"current_classes: {current_classes}")
+    # print(f"assertion_classes: {assertion_classes}")
+    assert set(current_classes) == set(assertion_classes), "mapping is not valid"
+
+
+
+
+def run(assertion_mapping: Map):
+    copy_class_files()
+
+    validate_mapping(assertion_mapping)
+    comment_all_files(assertion_mapping)
 
 
 if __name__ == "__main__":
-    copy_class_files()
-    comment_all_files()
+    print(f"the file {__file__} is run\n")
 
 

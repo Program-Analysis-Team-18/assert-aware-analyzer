@@ -93,18 +93,9 @@ class Map:
                 return cls
         return None
     
-    # Petteri: I think this is not required anymore. Can be deleted
-    # def add_method_to_class(self, class_name: str, method: Method):
-    #     cls = self.return_class(class_name)
-    #     if cls:
-    #         cls.add_method(method)
-    #     else:
-    #         self.add_class(class_name)
-    #         cls = self.return_class(class_name)
-    #         if not (cls.return_method(class_name)):
-    #             cls.add_method(method)
-
     def print_mapping(self):
+        if not self.classes:
+            print("Mapping is empty")
         for cls in self.classes:
             print(f"\n=== Class: {cls.class_name} ===")
             print(f"Average assertions per method: {cls.average_assertion_per_method}")

@@ -8,9 +8,7 @@ import code_rewriter
 
 
 if __name__ == "__main__":
+    print(f"the file {__file__} is run\n")
     assert_map = static_analysis.run()
-    # code_rewriter.run(assert_map, wrong_inputs)
-    print("test")
-    print("test")
-    assert_map.print_mapping
+    code_rewriter.run(assert_map)
 
