@@ -18,14 +18,14 @@ class Parameter:
 
 @dataclass
 class Assertion:
-    absolute_start_line: Point
-    absolute_end_line: Point
+    absolute_start_point: Point
+    absolute_end_point: Point
     assertion_node: Node
     classification: str 
     
-    def __init__(self, absolute_start_line: Point, absolute_end_line: Point, assertion_node: Node, classification: str):
-        self.absolute_start_line = absolute_start_line
-        self.absolute_end_line = absolute_end_line
+    def __init__(self, absolute_start_point: Point, absolute_end_point: Point, assertion_node: Node, classification: str):
+        self.absolute_start_point = absolute_start_point
+        self.absolute_end_point = absolute_end_point
         self.assertion_node = assertion_node
         self.classification = classification
         
@@ -117,7 +117,7 @@ class Map:
                 if method.assertions:
                     print("    Assertions:")
                     for assertion in method.assertions:
-                        start_line = assertion.absolute_start_line
+                        start_line = assertion.absolute_start_point
                         print(f"      - {assertion.classification} (line {start_line})")
                 else:
                     print("    Assertions: None")

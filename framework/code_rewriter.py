@@ -30,6 +30,23 @@ def add_comments_to_file(class_file: Classes):
         else:  prefix = f"// The file has on average {avg} assertions per method. This is not sufficient\n"
         old_file = class_file_path.read_text()
         class_file_path.write_text(prefix + old_file)
+
+    lines = class_file_path.read_text().splitlines(keepends=True)
+    assertion_list = [
+        a
+        for m in class_file.methods
+        for a in m.assertions
+    ]
+    assertion_list.sort(key=lambda x: x.absolute_end_point, reverse=True)
+    for a in assertion_list:
+        row = a.absolute_start_point[0]
+        col = a.absolute_start_point[1]
+        clf = " " * col  +  f"// classification: {a.classification}\n"
+        lines.insert(row, clf)
+    # for line in lines[:20]:
+    #     print(f"{line}")
+    filestr: str = "".join(lines)
+    class_file_path.write_text(filestr)
     add_assertion_prefix()
 
 def comment_all_files(assertion_mapping):

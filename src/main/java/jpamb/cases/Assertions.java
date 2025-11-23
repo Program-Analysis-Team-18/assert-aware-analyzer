@@ -82,6 +82,19 @@ public class Assertions {
         assert (arr[0] = 9) == 9; // assignment expression
     }
     
+    @Case("() -> ok")
+    @Tag({ ASSERTION })
+    public static void multilineAssertion(x: int) {
+        int[] arr = {1};
+        assert (
+                3 < 7 &&
+                x < 4 &&
+                9 < 13
+            ) : "assertion failed";
+
+        return x;
+    }
+    
     // @Case("() -> side-effect")
     // @Tag({ ASSERTION })
     // public static void callToSideEffect() {

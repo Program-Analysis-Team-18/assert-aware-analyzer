@@ -97,11 +97,11 @@ def parse_assertion_data(method_node: Node, file_data: bytes) -> List[Assertion]
 
     for name, nodelist in QueryCursor(assert_q).captures(method_node).items():
         for assertion_node in nodelist:
-            start_line, start_col = assertion_node.start_point
-            end_line, end_col = assertion_node.end_point
+            start_point = assertion_node.start_point
+            end_point = assertion_node.end_point
 
             classification: str = "unclassified"
-            assertion_list.append(Assertion(start_line, end_line, assertion_node, classification))
+            assertion_list.append(Assertion(start_point, end_point, assertion_node, classification))
 
     return assertion_list
 
