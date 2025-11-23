@@ -2,7 +2,7 @@ import random
 import string
 from copy import deepcopy
 from typing import List
-from solutions.interpreter import interpret
+from interpreter import interpret
 
 
 class CustomType:
@@ -11,14 +11,14 @@ class CustomType:
         self.init_params = params
 
 
-"""
+class Fuzzer:
+    """
     A fuzzer that generates random or coverage-guided inputs for the JPAMB methods.
 
     Usage: f = Fuzzer("jpamb.cases.Arrays.arraySpellsHello:([C)V", None, True)
            f.fuzz()
-"""
-class Fuzzer:
-    def __init__(self, method: str, corpus: List = None, coveraged_based: bool = True, fuzz_for: int = 1000000):
+    """
+    def __init__(self, method: str, corpus: List = None, coveraged_based: bool = True, fuzz_for: int = 10_000):
         self.method = method
         self.coverage_based = coveraged_based
         self.method_params = self.parse_parameters(method)
@@ -264,10 +264,12 @@ class Fuzzer:
         print(self.error_map)
 
 
-# method_id = "jpamb.cases.Tricky.crashy:(III[C)V
+# method_id = "jpamb.cases.Tricky.crashy:(III[C)V"
 method_id = "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V"
 # method_id = "jpamb.cases.Arrays.arraySpellsHello:([C)V"
 # method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
 # method_id = "jpamb.cases.Tricky.PositiveIntegers:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V"
 fuzzer = Fuzzer(method_id)
 fuzzer.fuzz()
+
+# PYTHONPATH=. uv run framework/fuzzer/fuzzer.py
