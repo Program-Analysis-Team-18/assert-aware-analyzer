@@ -20,15 +20,17 @@ def add_comments_to_file(class_file: Classes):
     class_file_path: Path = BASE / "annotated_output_files" / f"{class_file.class_name}.java"
     print(f"class_file_path: {class_file_path}")
 
-    with open(class_file_path, "a") as f:
-        f.write("Hello")
-    # add the assesrtion per method to a new file, then append the old file
-    avg = class_file.average_assertion_per_method
-    if avg >= 2:
-        prependix = f"// The file has on average {avg} assertions per method. This is sufficient"
-    else:  prependix = f"// The file has on average {avg} assertions per method. This is not sufficient\n"
-    old_file = class_file_path.read_text()
-    class_file_path.write_text(prependix + old_file)
+    def add_assertion_prefix():
+        """
+        add_assertion_prefix adds the assesrtion per method to a new file, then appends the old file
+        """
+        avg = class_file.average_assertion_per_method
+        if avg >= 2:
+            prefix = f"// The file has on average {avg} assertions per method. This is sufficient"
+        else:  prefix = f"// The file has on average {avg} assertions per method. This is not sufficient\n"
+        old_file = class_file_path.read_text()
+        class_file_path.write_text(prefix + old_file)
+    add_assertion_prefix()
 
 def comment_all_files(assertion_mapping):
     root = Path("annotated_output_files")
@@ -45,8 +47,6 @@ def validate_mapping(assertion_mapping):
     assertion_classes = [cf.class_name for cf in assertion_mapping.classes]
     root = Path("annotated_output_files")
     current_classes = [Path(class_file.name).stem for class_file in list(root.rglob("*.java"))]
-    # print(f"current_classes: {current_classes}")
-    # print(f"assertion_classes: {assertion_classes}")
     assert set(current_classes) == set(assertion_classes), "mapping is not valid"
 
 
