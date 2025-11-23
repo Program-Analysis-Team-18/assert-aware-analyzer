@@ -18,7 +18,6 @@ def copy_class_files():
 
 def add_comments_to_file(class_file: Classes):
     class_file_path: Path = OUT / f"{class_file.class_name}.java"
-    print(f"class_file_path: {class_file_path}")
 
     def add_assertion_prefix():
         """
@@ -30,26 +29,31 @@ def add_comments_to_file(class_file: Classes):
         else:  prefix = f"// The file has on average {avg} assertions per method. This is not sufficient\n"
         old_file = class_file_path.read_text()
         class_file_path.write_text(prefix + old_file)
-
-    lines = class_file_path.read_text().splitlines(keepends=True)
-    assertion_list = [
-        a
-        for m in class_file.methods
-        for a in m.assertions
-    ]
-    assertion_list.sort(key=lambda x: x.absolute_end_point, reverse=True)
-    for a in assertion_list:
-        row = a.absolute_start_point[0]
-        col = a.absolute_start_point[1]
-        clf = " " * col  +  f"// classification: {a.classification}\n"
-        lines.insert(row, clf)
-    # for line in lines[:20]:
-    #     print(f"{line}")
-    filestr: str = "".join(lines)
-    class_file_path.write_text(filestr)
+    def add_comments():
+        """
+        add_comments will prepend a classification to each assertion in the suite. the prepending is done in reverse order to avoid keeping an offset.
+        """
+        lines = class_file_path.read_text().splitlines(keepends=True)
+        assertion_list = [
+            a
+            for m in class_file.methods
+            for a in m.assertions
+        ]
+        assertion_list.sort(key=lambda x: x.absolute_end_point, reverse=True)
+        for a in assertion_list:
+            row = a.absolute_start_point[0]
+            col = a.absolute_start_point[1]
+            clf = " " * col  +  f"// classification: {a.classification}\n"
+            lines.insert(row, clf)
+        filestr: str = "".join(lines)
+        class_file_path.write_text(filestr)
+    add_comments()
     add_assertion_prefix()
 
 def comment_all_files(assertion_mapping):
+    """
+    comment_all_files iterates through the assertion mapping to comment each file.
+    """
     class_list: list[Classes] = assertion_mapping.classes
     for cf in class_list:
         add_comments_to_file(cf)
@@ -61,7 +65,7 @@ def validate_mapping(assertion_mapping):
     validate_mapping goes through the mapping and the annotated_OUTput_files, then it confirms that those classes are the exact same
     """
     assertion_classes = [cf.class_name for cf in assertion_mapping.classes]
-    current_classes = [Path(class_file.name).stem for class_file in list(ROOT.rglob("*.java"))]
+    current_classes = [Path(class_file.name).stem for class_file in list(OUT.rglob("*.java"))]
     assert set(current_classes) == set(assertion_classes), "mapping is not valid"
 
 
