@@ -68,46 +68,36 @@ class AssertSolver:
         self._add_negated_assertions()
 
         last_model = None
+        outcome = None
 
         for i in range(attempts):
             result = self.solver.check()
-
-            if result != z3.sat:
-                return SolveResult(
+            if i == 0 or result == z3.sat:
+                outcome = SolveResult(
                     status=result,
                     variables=self.variables,
                     solver=self.solver,
                     model=None
                 )
 
+            if result != z3.sat:
+                return outcome
+
             model = self.solver.model()
+            outcome.model = model
 
             # If this is the model we want, return it
             if i == attempts - 1:
-                return SolveResult(
-                    status=result,
-                    variables=self.variables,
-                    solver=self.solver,
-                    model=model
-                )
+                return outcome
 
             # Otherwise block the current model and continue
             has_vars = self._block_current_model(model, i)
 
             # No new distinct model exists
             if not has_vars:
-                return SolveResult(
-                    status=result,
-                    variables=self.variables,
-                    solver=self.solver,
-                    model=model
-                )
+                return outcome
 
             last_model = model
+            outcome.model = last_model
 
-        return SolveResult(
-            status=result,
-            variables=self.variables,
-            solver=self.solver,
-            model=last_model
-        )
+        return outcome
