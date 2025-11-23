@@ -9,13 +9,10 @@ public @interface Tag {
   TagType[] value();
 
   public static enum TagType {
-    CONDITIONAL,
-    LOOP,
-    INTEGER_OVERFLOW,
-    CALL,
-    ARRAY,
-    RECURSION,
-    STDLIB,
-    ASSERTION,
+    SIDE_EFFECT_ASSERT,
+    USELESS_ASSERT,
+    USEFUL_ASSERT,
+    TAUTOLOGY_ASSERT,
+    CONTRADICTION_ASSERT,
   }
 }
