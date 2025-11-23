@@ -388,8 +388,15 @@ $ nix develop --command uv run build --decompile
 ```
 
 Alternatively, after updating the cases, just run the script that combine commands above:
+
 ```shell
 $ ./update_cases.sh
+```
+
+**Note from Marco: if previous commands don't not work, run the following command instead:
+
+```shell
+nix develop --command uv run jpamb build --compile --decompile
 ```
 
 ## Problems with extended benchmark
@@ -401,22 +408,26 @@ $ nix develop --command uv run mvn -e compile
 It essentially skips the run made my jpamb build and manually runs maven to compile the java code and will display any errors that may have occurred during compilation.
 
 ## Running inetrpreter with obejct as an input to the function
-This is an example of using our interpreter with method that takes object as an input parameter
+
+The following are a few examples of using our interpreter with method that takes objects as an input parameters:
 
 ```shell
-$ uv run solutions/interpreter.py "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V" "(new jpamb/cases/PositiveInteger(1))"
-```
-
-With input as two objects:
-```shell
-$ uv run solutions/interpreter.py "jpamb.cases.CustomClasses.TwoObjectsInput:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V" "(new jpamb/cases/PositiveInteger(20), new jpamb/cases/PositiveInteger(25))"
+$ uv run framework/interpreter.py "jpamb.cases.CustomClasses.TwoObjectsInput:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V" "(new jpamb/cases/PositiveInteger(20), new jpamb/cases/PositiveInteger(25))"
 ```
 
 With input as object which constructor requires two parameters:
 ```shell
-$ uv run solutions/interpreter.py "jpamb.cases.CustomClasses.TwoInputsToConstructor:(Ljpamb/cases/PositiveInteger2Params<init>II;)V" "(new jpamb/cases/PositiveInteger2Params(20, 50))"
+$ uv run framework/interpreter.py "jpamb.cases.CustomClasses.TwoInputsToConstructor:(Ljpamb/cases/PositiveInteger2Params<init>II;)V" "(new jpamb/cases/PositiveInteger2Params(20, 50))"
 ```
 
+```shell
+$ uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;I)V" "(new jpamb/cases/PositiveInteger(2),new jpamb/cases/PositiveInteger(3),5)"
+```
 
+```shell
+$ uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.extractBlock:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/CappedInteger<init>II;Ljpamb/cases/CappedInteger<init>II;)V" "(new jpamb/cases/PositiveInteger(20), new jpamb/cases/CappedInteger(4,4), new jpamb/cases/CappedInteger(5,5))"
+```
 
-
+```shell
+$ uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.extractPacketWindow:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/CappedInteger<init>II;)V" "(new jpamb/cases/PositiveInteger(20), new jpamb/cases/CappedInteger(4,10))"
+```
