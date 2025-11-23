@@ -433,6 +433,22 @@ def setup():
     log = logging
     log.basicConfig(level=logging.DEBUG)
 
+def run():
+    setup()
+
+    # Initialize the assertion mapping
+    assertion_mapping = Map()
+
+    parse_classes(assertion_mapping)
+
+    for cls in assertion_mapping.classes:
+        update_methods_change_state_field(cls)
+
+    start_static_analysis(assertion_mapping)
+    return assertion_mapping
+
+
+
 
 if __name__ == "__main__":
     setup()
