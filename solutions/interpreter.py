@@ -1,6 +1,9 @@
 """
 jpamb.jvm.opcode
 
+!!! Note: this module is deprecated and could be out of sync
+!!! Use the framework/interpreter.py instead
+
 This module contains the decompilation of the output of jvm2json
 into a python structure, as well documentation and semantics for
 each instruction.
@@ -39,33 +42,33 @@ def wrap_value(value: any) -> jvm.Value:
             raise TypeError(f"Do not know how to wrap {value!r}")
 
 def return_value_given_str(input: str):
-        arg = None
-        if re.match(r"^(-?[0-9]+)$", input):
-            arg = jvm.Value.int(int(input))
-        elif re.search(r'\[([IC]):\s*([^]]+)\]', input):
-            arr_match = re.search(r'\[([IC]):\s*([^]]+)\]', input)
-            arr_type = arr_match.group(1)
-            arr_content = arr_match.group(2)
+    arg = None
+    if re.match(r"^([0-9]+)$", input):
+        arg = jvm.Value.int(int(input))
+    elif re.search(r'\[([IC]):\s*([^]]+)\]', input):
+        arr_match = re.search(r'\[([IC]):\s*([^]]+)\]', input)
+        arr_type = arr_match.group(1)
+        arr_content = arr_match.group(2)
 
-            cleaned = arr_content.strip('()').split(',')
-            args_str_list = [item.strip() for item in cleaned]
-            args_list = []
+        cleaned = arr_content.strip('()').split(',')
+        args_str_list = [item.strip() for item in cleaned]
+        args_list = []
 
-            if arr_type == 'I':
-                for integer in args_str_list:
-                    args_list.append(jvm.Value.int(int(integer)))
-                arg = jvm.Value.array(jvm.Int(), args_list)
-            elif arr_type == 'C':
-                for character in args_str_list:
-                    args_list.append(jvm.Value.char(character))
-                arg = jvm.Value.array(jvm.Char(), args_list)
-            else:
-                raise ValueError("Unsupported array type for object's constuctor input")
-        elif re.match(r"^([^0-9,])$", input):
-            arg = jvm.Value.char(input)
+        if arr_type == 'I':
+            for integer in args_str_list:
+                args_list.append(jvm.Value.int(int(integer)))
+            arg = jvm.Value.array(jvm.Int(), args_list)
+        elif arr_type == 'C':
+            for character in args_str_list:
+                args_list.append(jvm.Value.char(character))
+            arg = jvm.Value.array(jvm.Char(), args_list)
         else:
-            raise ValueError("Unsupported type of input to the object's constructor")
-        return arg
+            raise ValueError("Unsupported array type for object's constuctor input")
+    elif re.match(r"^([^0-9,])$", input):
+        arg = jvm.Value.char(input)
+    else:
+        raise ValueError("Unsupported type of input to the object's constructor")
+    return arg
 
 
 @dataclass
@@ -289,12 +292,11 @@ def _invoke_special_method(method: jvm.AbsMethodID, is_interface: bool, state: S
     state.frames.push(new_frame)
     return state
 
-def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
+def step(state: State, bytecode: Bytecode, assertions_disabled: bool = False) -> State | InterpretationResult:
     """
     Stepping function:
     bc ⊢ ⟨η,μ⟩ → ⟨η‾,μ‾⟩
     """
-
     frame = state.frames.peek()
 
     def _push(value):
@@ -374,12 +376,15 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         frame.pc += 1
         return state
 
-    def _get_static(field):
+    def _get_static(field: jvm.AbsFieldID, assertions_disabled=False):
         """
         Pushes the value of the specified static field onto the operand stack.
         bc ⊢ ⟨λ, σ, ι⟩ → ⟨λ, σ‾, ι‾⟩
         """
-        value = bytecode.get_static_field(frame.pc, field)
+        if assertions_disabled and field.extension.name == "$assertionsDisabled":
+            value = wrap_value(True)
+        else:
+            value = bytecode.get_static_field(frame.pc, field)
         frame.stack.push(value)
         frame.pc += 1
         return state
@@ -586,6 +591,38 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
         frame.pc += 1
         return state
+    
+    def _new_matrix(matrix_type: jvm.Type):
+        d2 = frame.stack.pop()
+        d1 = frame.stack.pop()
+
+        assert d1.type is jvm.Int(), f'Dimension 1 size must be Int, got {d1.type}'
+        assert d2.type is jvm.Int(), f'Dimension 2 size must be Int, got {d2.type}'
+
+        if d1.value < 0 or d2.value < 0:
+            return InterpretationResult("negative array size", frame.pc.offset)
+
+        next_ref = max(state.heap.keys()) + 1 if state.heap else 0
+
+        outer_ref = next_ref
+        next_ref += 1
+
+        row_refs: list[int] = []
+
+        for _ in range(d1.value):
+            row = [0 for _ in range(d2.value)]
+            state.heap[next_ref] = jvm.Value.array(matrix_type, row)
+            row_refs.append(next_ref)
+            next_ref += 1
+
+        outer_array_type = jvm.Array(matrix_type)
+
+        state.heap[outer_ref] = jvm.Value.array(outer_array_type, row_refs)
+
+        frame.stack.push(jvm.Value.int(outer_ref))
+        frame.pc += 1
+        return state
+
 
     def _array_store(array_type: jvm.Type):
         value, index, ref = frame.stack.pop(), frame.stack.pop(), frame.stack.pop()
@@ -595,21 +632,26 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
 
         assert ref.type is jvm.Int(), f'Array ref type mismatch {ref!r}'
         assert index.type is jvm.Int(), f'Index type mismatch {index.type}'
-        assert value.type is array_type, f'Value type mismatch {value.type}'
 
-        old_array = state.heap[ref.value]
-
-        if index.value >= len(old_array.value):
-            return InterpretationResult('out of bounds', frame.pc.offset)
-
-        new_array = list(old_array.value)
-
-        if(index.value < 0):
+        if index.value < 0:
             return InterpretationResult("negative array size", frame.pc.offset)
 
-        new_array[index.value] = value.value
+        old_array_val = state.heap[ref.value]
+        old_array = list(old_array_val.value)
 
-        state.heap[ref.value] = jvm.Value.array(array_type, new_array)
+        if index.value >= len(old_array):
+            return InterpretationResult('out of bounds', frame.pc.offset)
+
+        match array_type:
+            case jvm.Int() | jvm.Char() | jvm.Boolean():
+                assert value.type is array_type, f'Value type mismatch {value.type} (expected {array_type})'
+                old_array[index.value] = value.value
+
+            case _:
+                assert value.type is jvm.Int(), f'Expected reference (int) value, got {value.type}'
+                old_array[index.value] = value.value
+
+        state.heap[ref.value] = jvm.Value.array(array_type, old_array)
 
         frame.pc += 1
         return state
@@ -631,6 +673,8 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
                 frame.stack.push(jvm.Value.int(value))
             case jvm.Char():
                 frame.stack.push(jvm.Value.int(ord(value)))
+            case jvm.Reference():
+                frame.stack.push(jvm.Value.int(value))
             case _:
                 raise NotImplementedError(f"Unknown array type: {array_type}")
 
@@ -715,7 +759,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         case jvm.Binary(type=jvm.Int(), operant=jvm.BinaryOpr.Mul): return _binary_mul()
         case jvm.Incr(index=i, amount=a): return _incr(index=i, amount=a)
         case jvm.Dup(words=1): return _dup()
-        case jvm.Get(static=True, field=f): return _get_static(field=f)
+        case jvm.Get(static=True, field=f): return _get_static(field=f, assertions_disabled=assertions_disabled)
         case jvm.Get(static=False, field=f): return _get_field(field=f)
         case jvm.Return(type=t): return _return(return_type=t)
         case jvm.If(condition=c, target=t): return _if(condition=c, target=t)
@@ -723,6 +767,7 @@ def step(state: State, bytecode: Bytecode) -> State | InterpretationResult:
         case jvm.New(classname=cn): return _new(classname=cn)
         case jvm.Store(type=_, index=i): return _store(index=i)
         case jvm.NewArray(type=t, dim=1): return _new_array(array_type=t)
+        case jvm.NewArray(type=t, dim=2): return _new_matrix(matrix_type=t)
         case jvm.ArrayStore(type=t): return _array_store(array_type=t)
         case jvm.ArrayLoad(type=t): return _array_load(array_type=t)
         case jvm.ArrayLength(): return _array_length()
@@ -746,7 +791,7 @@ def configure_logger():
     logger.add(sys.stderr, format="[{level}] {message}")
 
 
-def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, method_input_str: str, bytecode: Bytecode) -> State:
+def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, method_input_str: str, bytecode: Bytecode, assertions_disabled: bool=False) -> State:
     """Generates the initial frame from the given method id and method input"""
     initial_frame = Frame.from_method(method_id)
     heap = {}
@@ -810,7 +855,7 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
                 look_for_return = re.match(r"return:V", str(bytecode[peek_frame.pc]))
                 if look_for_return and constructor_frame == peek_frame:
                     break
-                state = step(state, bytecode)
+                state = step(state, bytecode, assertions_disabled)
 
             #--- so now we skip the interpreter at all, and "force" the initial frame - since the constructor was already checked
             #----simply instate the initial frame again - with out heap
@@ -845,7 +890,8 @@ def input_is_an_object() -> bool:
     return False
 
 
-def interpret(method, inputs, verbose=False) -> (str, int):
+def interpret(method, inputs, verbose=False, assertions_disabled=False) -> InterpretationResult:
+    # print(f"INTERPRETER method: {method}, inputs: {inputs}")
     if not verbose:
         logger.remove()
 
@@ -858,12 +904,15 @@ def interpret(method, inputs, verbose=False) -> (str, int):
 
     mininput_str = inputs
     try:
-        state = generate_initial_state(mid, minput, mininput_str, bc)
+        state = generate_initial_state(mid, minput, mininput_str, bc, assertions_disabled)
     except Exception as e:
-        return InterpretationResult("generic error", state.frames.peek().pc.offset)
+        return InterpretationResult("generic error", 0)
 
     for _ in range(100000):
-        state = step(state, bc)
+        try:
+            state = step(state, bc, assertions_disabled)
+        except Exception as e:
+            return InterpretationResult("generic error", state.frames.peek().pc.offset)
         if isinstance(state, InterpretationResult):
             return state
     else:
