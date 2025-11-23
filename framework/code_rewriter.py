@@ -2,22 +2,22 @@ import shutil  # shell utilities
 from pathlib import Path
 from static_analysis import Map, Classes
 
+# Declaring global path elements. This way does not matter from which directory you run the file
+BASE = Path(__file__).resolve().parent.parent
+ROOT = Path(BASE / "src/main/java/jpamb/cases")
+OUT = Path(str(BASE / "annotated_output_files"))
+
 def copy_class_files():
     """
     copy_class_files makes copies of the .java class files
     """
-    BASE = Path(__file__).resolve().parent.parent
-    root = Path("src/main/java/jpamb/cases")
-    out = Path(str(BASE / "annotated_output_files"))
-    out.mkdir(parents=True, exist_ok=True)
+    OUT.mkdir(parents=True, exist_ok=True)
 
-    for class_file in list(root.rglob("*.java")):
-        shutil.copyfile(str(class_file), str(out / class_file.name))
+    for class_file in list(ROOT.rglob("*.java")):
+        shutil.copyfile(str(class_file), str(OUT / class_file.name))
 
 def add_comments_to_file(class_file: Classes):
-    BASE = Path(__file__).resolve().parent.parent
-    out = Path(str(BASE / "annotated_output_files"))
-    class_file_path: Path = BASE / "annotated_output_files" / f"{class_file.class_name}.java"
+    class_file_path: Path = OUT / f"{class_file.class_name}.java"
     print(f"class_file_path: {class_file_path}")
 
     def add_assertion_prefix():
@@ -33,7 +33,6 @@ def add_comments_to_file(class_file: Classes):
     add_assertion_prefix()
 
 def comment_all_files(assertion_mapping):
-    root = Path("annotated_output_files")
     class_list: list[Classes] = assertion_mapping.classes
     for cf in class_list:
         add_comments_to_file(cf)
@@ -42,11 +41,10 @@ def comment_all_files(assertion_mapping):
 
 def validate_mapping(assertion_mapping):
     """
-    validate_mapping goes through the mapping and the annotated_output_files, then it confirms that those classes are the exact same
+    validate_mapping goes through the mapping and the annotated_OUTput_files, then it confirms that those classes are the exact same
     """
     assertion_classes = [cf.class_name for cf in assertion_mapping.classes]
-    root = Path("annotated_output_files")
-    current_classes = [Path(class_file.name).stem for class_file in list(root.rglob("*.java"))]
+    current_classes = [Path(class_file.name).stem for class_file in list(ROOT.rglob("*.java"))]
     assert set(current_classes) == set(assertion_classes), "mapping is not valid"
 
 
