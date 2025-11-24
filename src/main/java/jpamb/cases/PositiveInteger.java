@@ -1,18 +1,15 @@
 package jpamb.cases;
 
-import jpamb.utils.Case;
 
+class PositiveInteger {
+    private int check_value;
 
-public class PositiveInteger {
+    PositiveInteger(int value) { set(value); }
 
-        private int check_value;
+    void set(int newValue) {
+        if (newValue < 0) throw new IllegalArgumentException();
+        this.check_value = newValue;
+    }
 
-        PositiveInteger(int value) { set(value); }
-
-        void set(int newValue) {
-            if (newValue < 0) throw new IllegalArgumentException();
-            this.check_value = newValue;
-        }
-
-        int get() { return check_value; }
+    int get() { return check_value; }
 }   
