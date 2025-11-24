@@ -852,13 +852,13 @@ def input_is_an_object() -> bool:
 
 
 def interpret(method, inputs, corpus=False, verbose=False):
+    if not verbose:
+        logger.remove()
+
     if corpus:
         analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(inputs)]
         return generate_corpus(analyse(PC(parse_methodid(method), 0), analyse_method_input, 50), inputs)
     else:
-        if not verbose:
-            logger.remove()
-
         bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
 
         try:
