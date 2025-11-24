@@ -867,9 +867,9 @@ def interpret(method, inputs, corpus=False, verbose=False):
             return InterpretationResult(f"{e}", 0)
 
         try:
-            state = generate_initial_state(mid, minput, method, bc)
+            state = generate_initial_state(mid, minput, inputs, bc)
         except Exception as e:
-            return InterpretationResult("generic error", state.frames.peek().pc.offset)
+            return InterpretationResult("generic error", 0)
 
         for _ in range(100000):
             state = step(state, bc)
