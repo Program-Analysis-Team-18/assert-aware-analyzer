@@ -18,9 +18,10 @@ from loguru import logger
 
 import jpamb
 from jpamb.model import Input
-from jpamb import jvm
+from jpamb import jvm, parse_methodid
 
 from framework.symbolic_execution import analyse
+from framework.corpus_generator import generate_corpus
 
 import z3
 import argparse
@@ -850,56 +851,50 @@ def input_is_an_object() -> bool:
     return False
 
 
-def interpret(method, inputs, verbose=False) -> (str, int):
-    if not verbose:
-        logger.remove()
-
-    bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
-
-    try:
-        mid, minput = jpamb.getcasefromparams(method, inputs)
-    except ValueError as e:
-        return InterpretationResult(f"{e}", 0)
-
-    try:
-        state = generate_initial_state(mid, minput, method, bc)
-    except Exception as e:
-        return InterpretationResult("generic error", state.frames.peek().pc.offset)
-
-    for _ in range(100000):
-        state = step(state, bc)
-        if isinstance(state, InterpretationResult):
-            return state
+def interpret(method, inputs, corpus=False, verbose=False):
+    if corpus:
+        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(inputs)]
+        return generate_corpus(analyse(PC(parse_methodid(method), 0), analyse_method_input, 50), inputs)
     else:
-        return InterpretationResult("timeout", state.frames.peek().pc.offset)
+        if not verbose:
+            logger.remove()
+
+        bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
+
+        try:
+            mid, minput = jpamb.getcasefromparams(method, inputs)
+        except ValueError as e:
+            return InterpretationResult(f"{e}", 0)
+
+        try:
+            state = generate_initial_state(mid, minput, method, bc)
+        except Exception as e:
+            return InterpretationResult("generic error", state.frames.peek().pc.offset)
+
+        for _ in range(100000):
+            state = step(state, bc)
+            if isinstance(state, InterpretationResult):
+                return state
+        else:
+            return InterpretationResult("timeout", state.frames.peek().pc.offset)
 
 
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description="Interpreter runner")
-    parser.add_argument('--analyse', action='store_true', help='Run in analysis mode')
-
-    parser.add_argument('function', type=str, help='Function to run')
-    parser.add_argument('args', type=str, help='Arguments for the function')
-
-    args_parser = parser.parse_args()
-
     configure_logger()
+    if "--analyse" in sys.argv:
+        method = sys.argv[1]
+        params = method[method.index('(') + 1:method.index(')')]
 
-    bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
-    mid, minput = jpamb.getcasefromparams(args_parser.function, args_parser.args)
-    state = generate_initial_state(mid, minput,args_parser.args,bc)
+        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
 
-    if args_parser.analyse:
-        params = args_parser.function[args_parser.function.index('(')+1:args_parser.function.index(')')]
-        analyse_method_input = [(chr(ord('a') + i), jvm.Int()) for i,_ in enumerate(params)]
-        analyse_method_input.append((chr(ord(analyse_method_input[len(params)-1][0])+1), jvm.Int()))
-
-        result = analyse(PC(mid,0), analyse_method_input, 50)
+        result = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
         for branch in result:
-            if "UNSAT" in branch:
-                print(branch)
+            # if "UNSAT" in branch:
+            print(branch)
     else:
+        bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
+        mid, minput = jpamb.getcasefromparams(sys.argv[1], sys.argv[2])
+        state = generate_initial_state(mid, minput, sys.argv[2], bc)
         for _ in range(100000):
             state = step(state, bc)
             if isinstance(state, InterpretationResult):
@@ -907,8 +902,3 @@ if __name__ == "__main__":
                 break
         else:
             print("*")
-
-        # state = step(state, bc)
-        # while isinstance(state, str):
-        #     print(state)
-        #     state = step(state, bc)

@@ -18,13 +18,15 @@ class CustomType:
            f.fuzz()
 """
 class Fuzzer:
-    def __init__(self, method: str, corpus: List = None, coveraged_based: bool = True, fuzz_for: int = 1000000):
+    def __init__(self, method: str, corpus: List = None, coveraged_based: bool = True, fuzz_for: int = 100000):
         self.method = method
         self.coverage_based = coveraged_based
         self.method_params = self.parse_parameters(method)
-        self.corpus = {0: self.random_input() if corpus is None else corpus}
+        self.corpus = {0: input for input in interpret(method, "".join(self.method_params), corpus=True)}
         self.fuzz_for = fuzz_for
         self.error_map = {}
+
+
 
     # Parses JVM descriptors between ( and ) into a list like ["I", "[C"].
     def parse_parameters(self, method: str):
@@ -264,10 +266,11 @@ class Fuzzer:
         print(self.error_map)
 
 
-# method_id = "jpamb.cases.Tricky.crashy:(III[C)V
-method_id = "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V"
+# method_id = "jpamb.cases.Tricky.crashy:(III[C)V"
+method_id = "jpamb.cases.SymbExecTest.misc:(III)I"
+# method_id = "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V"
 # method_id = "jpamb.cases.Arrays.arraySpellsHello:([C)V"
 # method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
 # method_id = "jpamb.cases.Tricky.PositiveIntegers:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V"
-fuzzer = Fuzzer(method_id)
+fuzzer = Fuzzer(method_id, fuzz_for=10000)
 fuzzer.fuzz()

@@ -6,7 +6,6 @@ from typing import Iterable
 
 import sys
 from loguru import logger
-import os
 
 logger.remove()
 logger.add(sys.stderr, format="[{level}] {message}")
@@ -337,10 +336,7 @@ def analyse(pc: PC, inputs: list[tuple[str, jvm.Type]], max_depth: int) -> list[
     var_names = [name for name, _ in inputs]
     symbolic_vars = z3.Ints(" ".join(var_names))
     
-    # Handle single variable case
-    if len(inputs) == 1:
-        symbolic_vars = [symbolic_vars]
-    
+
     # Create initial symbolic locals
     locals_dict = {i: var for i, var in enumerate(symbolic_vars)}
     state = SymState.from_locals(locals_dict)
@@ -393,13 +389,9 @@ def analyse(pc: PC, inputs: list[tuple[str, jvm.Type]], max_depth: int) -> list[
 
     return branches
 
-
-# Run symbolic analysis
 if __name__ == "__main__":
     methodid, input = jpamb.getcase()
-    # Example: Analyze with symbolic inputs
-    # You'll need to specify the input parameters based on your method signature
-    inputs = [("x", jvm.Int()), ("y", jvm.Int())]  # Adjust based on actual inputs
+    inputs = [("x", jvm.Int())]  # Adjust based on actual inputs
     max_depth = 150
     
-    analyse(PC(methodid, 0), inputs, max_depth)
+    print(analyse(PC(methodid, 0), inputs, max_depth))
