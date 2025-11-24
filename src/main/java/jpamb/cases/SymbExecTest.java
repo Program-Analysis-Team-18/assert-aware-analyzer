@@ -15,4 +15,22 @@ public class SymbExecTest {
         return x;           // returns [ a  > 10 |- a + 1 
                             //         , a <= 10 |- a      ]
     }
+
+    public static int misc(int a, int b)
+    {
+        int x = a;
+        int y = b;
+        if(x>y)
+        {
+            if(y+1 < x)
+            {
+                x = y - 1;
+                if (x > y)
+                    assert false;
+                if(x < y)
+                    return x + y;
+            }
+        }
+        return x + y;
+    }
 }
