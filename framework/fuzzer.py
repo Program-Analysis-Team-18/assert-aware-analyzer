@@ -2,7 +2,7 @@ import random
 import string
 from copy import deepcopy
 from typing import List
-from solutions.interpreter import interpret
+from interpreter import interpret
 
 
 class CustomType:
@@ -273,6 +273,7 @@ class Fuzzer:
 # method_id = "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V"
 # method_id = "jpamb.cases.Arrays.arraySpellsHello:([C)V"
 # method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
-method_id = "jpamb.cases.Tricky.PositiveIntegers:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V"
+# method_id = "jpamb.cases.Tricky.PositiveIntegers:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V"
+method_id = "jpamb.cases.SymbExecTest.incr:(I)I"
 fuzzer = Fuzzer(method_id, fuzz_for=10000)
 fuzzer.fuzz()

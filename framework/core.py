@@ -1,9 +1,17 @@
 from dataclasses import dataclass
-from typing import List
-from tree_sitter import Point, Node, Tree
-from jpamb.jvm import Absolute, MethodID
+from typing import List, Literal
+from tree_sitter import Point, Node
 from pathlib import Path
 
+Classification = Literal[
+    "tautology",
+    "contingent",
+    "contradiction",
+    "side_effect",
+    "useful",
+    "useless",
+    "unclassified",
+]
 
 @dataclass
 class Parameter:
@@ -21,7 +29,7 @@ class Assertion:
     absolute_start_line: Point
     absolute_end_line: Point
     assertion_node: Node
-    classification: str 
+    classification: Classification 
     
     def __init__(self, absolute_start_line: Point, absolute_end_line: Point, assertion_node: Node, classification: str):
         self.absolute_start_line = absolute_start_line
