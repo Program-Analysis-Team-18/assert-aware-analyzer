@@ -17,24 +17,14 @@ class Fuzzer:
 
     Usage: f = Fuzzer("jpamb.cases.Arrays.arraySpellsHello:([C)V", None, True)
            f.fuzz()
-<<<<<<< HEAD:src/fuzzer/Fuzzer.py
-"""
-class Fuzzer:
-    def __init__(self, method: str, corpus: List = None, symbolic_corpus=False, coveraged_based: bool = True, fuzz_for: int = 100000):
-=======
     """
     def __init__(self, method: str, corpus: List = None, coveraged_based: bool = True, fuzz_for: int = 10_000):
->>>>>>> origin/main:framework/fuzzer.py
         self.method = method
         self.coverage_based = coveraged_based
         self.method_params = self.parse_parameters(method)
-        if symbolic_corpus:
-            self.corpus = {0: input for input in interpret(method, "".join(self.method_params), corpus=True)}
-        else:
-            self.corpus = {0: self.random_input() if corpus is None else corpus}
+        self.corpus = {0: self.random_input() if corpus is None else corpus}
         self.fuzz_for = fuzz_for
         self.error_map = {}
-
 
     # Parses JVM descriptors between ( and ) into a list like ["I", "[C"].
     def parse_parameters(self, method: str):
@@ -275,15 +265,6 @@ class Fuzzer:
 
 
 # method_id = "jpamb.cases.Tricky.crashy:(III[C)V"
-<<<<<<< HEAD:src/fuzzer/Fuzzer.py
-# method_id = "jpamb.cases.SymbExecTest.misc:(III)I"
-# method_id = "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V"
-# method_id = "jpamb.cases.Arrays.arraySpellsHello:([C)V"
-# method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
-method_id = "jpamb.cases.Tricky.PositiveIntegers:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V"
-fuzzer = Fuzzer(method_id, fuzz_for=10000)
-fuzzer.fuzz()
-=======
 method_id = "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V"
 # method_id = "jpamb.cases.Arrays.arraySpellsHello:([C)V"
 # method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
@@ -292,4 +273,3 @@ fuzzer = Fuzzer(method_id)
 fuzzer.fuzz()
 
 # PYTHONPATH=. uv run framework/fuzzer/fuzzer.py
->>>>>>> origin/main:framework/fuzzer.py

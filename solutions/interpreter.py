@@ -21,13 +21,7 @@ from loguru import logger
 
 import jpamb
 from jpamb.model import Input
-from jpamb import jvm, parse_methodid
-
-from framework.symbolic_execution import analyse
-from framework.corpus_generator import generate_corpus
-
-import z3
-import argparse
+from jpamb import jvm
 
 
 def wrap_value(value: any) -> jvm.Value:
@@ -896,76 +890,53 @@ def input_is_an_object() -> bool:
     return False
 
 
-def interpret(method, inputs, corpus=False, verbose=False, assertions_disabled=False) -> InterpretationResult:
+def interpret(method, inputs, verbose=False, assertions_disabled=False) -> InterpretationResult:
     # print(f"INTERPRETER method: {method}, inputs: {inputs}")
     if not verbose:
         logger.remove()
 
-    if corpus:
-        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(inputs)]
-        return generate_corpus(analyse(PC(parse_methodid(method), 0), analyse_method_input, 50), inputs)
-    else:
-        bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
+    bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
 
-        try:
-            mid, minput = jpamb.getcasefromparams(method, inputs)
-        except ValueError as e:
-            return InterpretationResult(f"{e}", 0)
+    try:
+        mid, minput = jpamb.getcasefromparams(method, inputs)
+    except ValueError as e:
+        return InterpretationResult(f"{e}", 0)
 
-        mininput_str = inputs
+    mininput_str = inputs
+    try:
+        state = generate_initial_state(mid, minput, mininput_str, bc, assertions_disabled)
+    except Exception as e:
+        return InterpretationResult("generic error", 0)
+
+    for _ in range(100000):
         try:
-            state = generate_initial_state(mid, minput, mininput_str, bc, assertions_disabled)
+            state = step(state, bc, assertions_disabled)
         except Exception as e:
-            return InterpretationResult("generic error", 0)
-
-        for _ in range(100000):
-            try:
-                state = step(state, bc, assertions_disabled)
-            except Exception as e:
-                return InterpretationResult("generic error", 0)
-            if isinstance(state, InterpretationResult):
-                return state
-        else:
-            bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
-
-            try:
-                mid, minput = jpamb.getcasefromparams(method, inputs)
-            except ValueError as e:
-                return InterpretationResult(f"{e}", 0)
-
-            try:
-                state = generate_initial_state(mid, minput, inputs, bc)
-            except Exception as e:
-                return InterpretationResult("generic error", 0)
-
-            for _ in range(100000):
-                state = step(state, bc)
-                if isinstance(state, InterpretationResult):
-                    return state
-            else:
-                return InterpretationResult("timeout", state.frames.peek().pc.offset)
+            return InterpretationResult("generic error", state.frames.peek().pc.offset)
+        if isinstance(state, InterpretationResult):
+            return state
+    else:
+        return InterpretationResult("timeout", state.frames.peek().pc.offset)
 
 
 if __name__ == "__main__":
     configure_logger()
-    if "--analyse" in sys.argv:
-        method = sys.argv[1]
-        params = method[method.index('(') + 1:method.index(')')]
 
-        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
+    bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
 
-        result = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
-        for branch in result:
-            # if "UNSAT" in branch:
-            print(branch)
+    mid, minput = jpamb.getcase()
+    mininput_str = sys.argv[2]
+    state = generate_initial_state(mid, minput,mininput_str,bc)
+
+    for _ in range(100000):
+        state = step(state, bc)
+        if isinstance(state, InterpretationResult):
+            print(f"{state.message}:{state.depth}")
+            break
     else:
-        bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
-        mid, minput = jpamb.getcasefromparams(sys.argv[1], sys.argv[2])
-        state = generate_initial_state(mid, minput, sys.argv[2], bc)
-        for _ in range(100000):
-            state = step(state, bc)
-            if isinstance(state, InterpretationResult):
-                print(f"{state.message}:{state.depth}")
-                break
-        else:
-            print("*")
+        print("*")
+
+    # state = step(state, bc)
+    # while isinstance(state, str):
+    #     print(state)
+    #     state = step(state, bc)
