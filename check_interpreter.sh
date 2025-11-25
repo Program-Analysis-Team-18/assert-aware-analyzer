@@ -1,1 +1,1 @@
-uv run jpamb interpret solutions/interpreter.py
+uv run jpamb interpret framework/interpreter.py

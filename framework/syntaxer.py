@@ -9,7 +9,7 @@ from jpamb import model
 from pathlib import Path
 from typing import List
 
-from utils import Parameter, Assertion, Method, Classes, Map
+from core import Parameter, Assertion, Method, Classes, Map, Classification
 
 def parse_local_variables(method_node: Node, file_data: bytes) -> List[Parameter]:
     local_params = []
@@ -100,7 +100,7 @@ def parse_assertion_data(method_node: Node, file_data: bytes) -> List[Assertion]
             start_line, start_col = assertion_node.start_point
             end_line, end_col = assertion_node.end_point
 
-            classification: str = "unclassified"
+            classification = "unclassified"
             assertion_list.append(Assertion(start_line, end_line, assertion_node, classification))
 
     return assertion_list
@@ -329,7 +329,7 @@ def get_obj_type(obj: str, params: List[Parameter], local: List[Parameter]):
     return None
 
 """Very messy, to refactor"""
-def classify_assertion(assertion: Assertion, assertion_mapping: Map, cls: Classes, method: Method) -> str:
+def classify_assertion(assertion: Assertion, assertion_mapping: Map, cls: Classes, method: Method) -> Classification:
 
     tree, file_data = parse_tree(cls.class_file_path)
 
@@ -380,7 +380,7 @@ def average_assertions_per_method(cls: Classes):
     else:
         cls.average_assertion_per_method = 0.0
 
-def start_static_analysis(assertion_mapping: Map):
+def start_syntactic_analysis(assertion_mapping: Map):
     
     #count average assertion per method
     for cls in assertion_mapping.classes:
@@ -433,8 +433,8 @@ def setup():
     log = logging
     log.basicConfig(level=logging.DEBUG)
 
-
-if __name__ == "__main__":
+def run() -> Map:
+    """Run Syntaxer."""
     setup()
 
     # Initialize the assertion mapping
@@ -445,9 +445,10 @@ if __name__ == "__main__":
     for cls in assertion_mapping.classes:
         update_methods_change_state_field(cls)
 
-    assertion_mapping.print_mapping()
-    start_static_analysis(assertion_mapping)
-    assertion_mapping.print_mapping()
+    # assertion_mapping.print_mapping()
+    start_syntactic_analysis(assertion_mapping)
+    # assertion_mapping.print_mapping()
 
+    return assertion_mapping
 
-
+run()

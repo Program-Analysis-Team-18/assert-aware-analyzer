@@ -1,15 +1,12 @@
 """
 jpamb.jvm.opcode
 
-!!! Note: this module is deprecated and could be out of sync
-!!! Use the framework/interpreter.py instead
-
 This module contains the decompilation of the output of jvm2json
 into a python structure, as well documentation and semantics for
 each instruction.
 
 Sample execution:
-- `uv run jpamb interpret --stepwise --filter Simple.divideByN: solutions/interpreter.py`
+- `uv run jpamb interpret --stepwise --filter Simple.divideByN: framework/interpreter.py`
 """
 import sys
 from pathlib import Path
@@ -21,13 +18,7 @@ from loguru import logger
 
 import jpamb
 from jpamb.model import Input
-from jpamb import jvm, parse_methodid
-
-from framework.symbolic_execution import analyse
-from framework.corpus_generator import generate_corpus
-
-import z3
-import argparse
+from jpamb import jvm
 
 
 def wrap_value(value: any) -> jvm.Value:
@@ -599,6 +590,7 @@ def step(state: State, bytecode: Bytecode, assertions_disabled: bool = False) ->
         return state
     
     def _new_matrix(matrix_type: jvm.Type):
+        # Stack: ..., d1, d2
         d2 = frame.stack.pop()
         d1 = frame.stack.pop()
 
@@ -608,23 +600,29 @@ def step(state: State, bytecode: Bytecode, assertions_disabled: bool = False) ->
         if d1.value < 0 or d2.value < 0:
             return InterpretationResult("negative array size", frame.pc.offset)
 
+        # Find first free heap ref
         next_ref = max(state.heap.keys()) + 1 if state.heap else 0
 
+        # Outer array ref
         outer_ref = next_ref
         next_ref += 1
 
         row_refs: list[int] = []
 
+        # Allocate each row as its own 1D array in the heap
         for _ in range(d1.value):
             row = [0 for _ in range(d2.value)]
             state.heap[next_ref] = jvm.Value.array(matrix_type, row)
             row_refs.append(next_ref)
             next_ref += 1
 
+        # Type of the outer array: array of (element_type)
+        # i.e., int[][] becomes Array(Int()) with values = [row_ref0, row_ref1, ...]
         outer_array_type = jvm.Array(matrix_type)
 
         state.heap[outer_ref] = jvm.Value.array(outer_array_type, row_refs)
 
+        # Push reference to the outer array on the stack
         frame.stack.push(jvm.Value.int(outer_ref))
         frame.pc += 1
         return state
@@ -649,11 +647,14 @@ def step(state: State, bytecode: Bytecode, assertions_disabled: bool = False) ->
             return InterpretationResult('out of bounds', frame.pc.offset)
 
         match array_type:
+            # Primitive arrays: store the primitive value
             case jvm.Int() | jvm.Char() | jvm.Boolean():
                 assert value.type is array_type, f'Value type mismatch {value.type} (expected {array_type})'
                 old_array[index.value] = value.value
 
+            # Reference arrays (arrays of arrays, arrays of objects, etc.)
             case _:
+                # elements are references → store an int ref
                 assert value.type is jvm.Int(), f'Expected reference (int) value, got {value.type}'
                 old_array[index.value] = value.value
 
@@ -896,76 +897,53 @@ def input_is_an_object() -> bool:
     return False
 
 
-def interpret(method, inputs, corpus=False, verbose=False, assertions_disabled=False) -> InterpretationResult:
+def interpret(method, inputs, verbose=False, assertions_disabled=False) -> InterpretationResult:
     # print(f"INTERPRETER method: {method}, inputs: {inputs}")
     if not verbose:
         logger.remove()
 
-    if corpus:
-        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(inputs)]
-        return generate_corpus(analyse(PC(parse_methodid(method), 0), analyse_method_input, 50), inputs)
-    else:
-        bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
+    bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
 
-        try:
-            mid, minput = jpamb.getcasefromparams(method, inputs)
-        except ValueError as e:
-            return InterpretationResult(f"{e}", 0)
+    try:
+        mid, minput = jpamb.getcasefromparams(method, inputs)
+    except ValueError as e:
+        return InterpretationResult(f"{e}", 0)
 
-        mininput_str = inputs
+    mininput_str = inputs
+    try:
+        state = generate_initial_state(mid, minput, mininput_str, bc, assertions_disabled)
+    except Exception as e:
+        return InterpretationResult("generic error", 0)
+
+    for _ in range(100000):
         try:
-            state = generate_initial_state(mid, minput, mininput_str, bc, assertions_disabled)
+            state = step(state, bc, assertions_disabled)
         except Exception as e:
-            return InterpretationResult("generic error", 0)
-
-        for _ in range(100000):
-            try:
-                state = step(state, bc, assertions_disabled)
-            except Exception as e:
-                return InterpretationResult("generic error", 0)
-            if isinstance(state, InterpretationResult):
-                return state
-        else:
-            bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
-
-            try:
-                mid, minput = jpamb.getcasefromparams(method, inputs)
-            except ValueError as e:
-                return InterpretationResult(f"{e}", 0)
-
-            try:
-                state = generate_initial_state(mid, minput, inputs, bc)
-            except Exception as e:
-                return InterpretationResult("generic error", 0)
-
-            for _ in range(100000):
-                state = step(state, bc)
-                if isinstance(state, InterpretationResult):
-                    return state
-            else:
-                return InterpretationResult("timeout", state.frames.peek().pc.offset)
+            return InterpretationResult("generic error", state.frames.peek().pc.offset)
+        if isinstance(state, InterpretationResult):
+            return state
+    else:
+        return InterpretationResult("timeout", state.frames.peek().pc.offset)
 
 
 if __name__ == "__main__":
     configure_logger()
-    if "--analyse" in sys.argv:
-        method = sys.argv[1]
-        params = method[method.index('(') + 1:method.index(')')]
 
-        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
+    bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
 
-        result = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
-        for branch in result:
-            # if "UNSAT" in branch:
-            print(branch)
+    mid, minput = jpamb.getcase()
+    mininput_str = sys.argv[2]
+    state = generate_initial_state(mid, minput,mininput_str,bc)
+
+    for _ in range(100000):
+        state = step(state, bc)
+        if isinstance(state, InterpretationResult):
+            print(f"{state.message}:{state.depth}")
+            break
     else:
-        bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
-        mid, minput = jpamb.getcasefromparams(sys.argv[1], sys.argv[2])
-        state = generate_initial_state(mid, minput, sys.argv[2], bc)
-        for _ in range(100000):
-            state = step(state, bc)
-            if isinstance(state, InterpretationResult):
-                print(f"{state.message}:{state.depth}")
-                break
-        else:
-            print("*")
+        print("*")
+
+    # state = step(state, bc)
+    # while isinstance(state, str):
+    #     print(state)
+    #     state = step(state, bc)
