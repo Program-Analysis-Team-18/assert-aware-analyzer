@@ -11,19 +11,19 @@ public class BenchmarkSuite {
 
     static int state;
 
-    public boolean invokeChangeState() { 
+    public static boolean invokeChangeState() { 
         changeState(); 
         return true;
     }
 
-    public void changeState() {
+    public static void changeState() {
         state = 5;
     }
 
     // Testing the assert-with-call chain.
     // invokeChangeState() is used inside an assert, but it still calls changeState(), which has a side effect.
     @Tag({ SIDE_EFFECT_ASSERT })
-    public void changeStateNested() {
+    public static void changeStateNested() {
         assert invokeChangeState(); 
     }
 
@@ -40,6 +40,12 @@ public class BenchmarkSuite {
     @Tag({ SIDE_EFFECT_ASSERT })
     public static void assertArrayWrite(int[] arr) {
         assert (arr[0] = 9) == 9;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void divideByN(int x, int n) {
+        assert n != 5;
+        int result = x / n;
     }
 
     // ===================
@@ -74,8 +80,8 @@ public class BenchmarkSuite {
 
     @Tag({ USEFUL_ASSERT, TAUTOLOGY_ASSERT })
     public static void calculateInterest(PositiveInteger principal, PositiveInteger months, PositiveInteger rate) {
-        assert principal.get() > 0;                     // useful
-        assert months.get() + 10 > months.get();        // tautology
+        assert principal.get() > 0;
+        assert months.get() + 10 > months.get();
 
         double interest = principal.get() * (rate.get() / 100);
         double riskModifier = months.get() > 12 ? 1 : 1;
