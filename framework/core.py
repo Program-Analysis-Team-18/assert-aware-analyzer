@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import List, Literal
+from dataclasses import dataclass, field
+from typing import List, Literal, Any
 from tree_sitter import Point, Node
 from pathlib import Path
 
@@ -26,14 +26,14 @@ class Parameter:
 
 @dataclass
 class Assertion:
-    absolute_start_line: Point
-    absolute_end_line: Point
+    absolute_start_point: Point
+    absolute_end_point: Point
     assertion_node: Node
     classification: Classification 
     
     def __init__(self, absolute_start_line: Point, absolute_end_line: Point, assertion_node: Node, classification: str):
-        self.absolute_start_line = absolute_start_line
-        self.absolute_end_line = absolute_end_line
+        self.absolute_start_point = absolute_start_line
+        self.absolute_end_point = absolute_end_line
         self.assertion_node = assertion_node
         self.classification = classification
         
@@ -41,11 +41,13 @@ class Assertion:
 @dataclass
 class Method:
     method_name: str
+    method_id: str
     method_node: Node
     parameters: List[Parameter]
     assertions: List[Assertion]
     local_variables: List[Parameter]
     change_state: bool
+    wrong_args: List[dict[str, Any]] = field(default_factory=list) # TODO adapt to new Fuzzer output [{faulty: bool, input: Any}]
     
     def __init__(self, method_name: str,  method_node: Node, parameters: List[Parameter], assertions: List[Assertion], local_variables: List[Parameter]):
         self.method_name = method_name
@@ -54,6 +56,35 @@ class Method:
         self.assertions = assertions
         self.local_variables = local_variables
         self.change_state = False
+
+    def set_method_id(self, method_id: str):
+        self.method_id = method_id
+
+    def parse_parameter(param) -> tuple[str, bool]:
+        """Parse a single parameter string"""
+        param = param.strip()
+        
+        if "new" in param:
+            start_index = param.find('(') + 1
+            end_index = param.find(')')
+            value = int(param[start_index:end_index])
+            return value, True
+        else:
+            return param, False
+        
+    def add_wrong_args(self, wrong_args_values: List[Any]):
+        result = {}
+        for i in len(wrong_args_values):
+            param_name = self.parameters[i].name
+            wrong_arg_value = wrong_args_values[i]
+
+            str_value, is_obj = self.parse_parameter(wrong_arg_value)
+            if is_obj:
+                param_name = f'{param_name}.get()'
+
+            # TODO parse the param based on param type
+            result[param_name] = str_value
+        self.wrong_args.append(result)
 
 
 @dataclass
@@ -113,6 +144,8 @@ class Map:
     #             cls.add_method(method)
 
     def print_mapping(self):
+        if not self.classes:
+            print("Mapping is empty")
         for cls in self.classes:
             print(f"\n=== Class: {cls.class_name} ===")
             print(f"Average assertions per method: {cls.average_assertion_per_method}")
@@ -134,7 +167,7 @@ class Map:
                 if method.assertions:
                     print("    Assertions:")
                     for assertion in method.assertions:
-                        start_line = assertion.absolute_start_line
+                        start_line = assertion.absolute_start_point
                         print(f"      - {assertion.classification} (line {start_line})")
                 else:
                     print("    Assertions: None")
