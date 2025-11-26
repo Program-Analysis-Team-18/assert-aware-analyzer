@@ -13,6 +13,21 @@ Classification = Literal[
     "unclassified",
 ]
 
+
+@dataclass
+class WrongInput:
+    value: Any
+    faulty: bool
+    is_obj: bool
+
+
+@dataclass
+class WrongParameter:
+    name: str
+    type: str
+    value: Any
+    faulty: bool
+
 @dataclass
 class Parameter:
     name: str
@@ -47,7 +62,7 @@ class Method:
     assertions: List[Assertion]
     local_variables: List[Parameter]
     change_state: bool
-    wrong_args: List[dict[str, Any]] = field(default_factory=list) # TODO adapt to new Fuzzer output [{faulty: bool, input: Any}]
+    wrong_inputs: List[WrongParameter]
     
     def __init__(self, method_name: str,  method_node: Node, parameters: List[Parameter], assertions: List[Assertion], local_variables: List[Parameter]):
         self.method_name = method_name
@@ -56,35 +71,38 @@ class Method:
         self.assertions = assertions
         self.local_variables = local_variables
         self.change_state = False
+        self.wrong_inputs = []
 
     def set_method_id(self, method_id: str):
         self.method_id = method_id
-
-    def parse_parameter(param) -> tuple[str, bool]:
-        """Parse a single parameter string"""
-        param = param.strip()
         
-        if "new" in param:
-            start_index = param.find('(') + 1
-            end_index = param.find(')')
-            value = int(param[start_index:end_index])
-            return value, True
-        else:
-            return param, False
-        
-    def add_wrong_args(self, wrong_args_values: List[Any]):
-        result = {}
-        for i in len(wrong_args_values):
+    def add_wrong_inputs(self, inputs: List[WrongInput]):
+        result: WrongParameter
+        for i in range(len(inputs)):
             param_name = self.parameters[i].name
-            wrong_arg_value = wrong_args_values[i]
+            param_type = self.parameters[i].type
+            input = inputs[i]
 
-            str_value, is_obj = self.parse_parameter(wrong_arg_value)
-            if is_obj:
+            if input.is_obj:
                 param_name = f'{param_name}.get()'
 
-            # TODO parse the param based on param type
-            result[param_name] = str_value
-        self.wrong_args.append(result)
+            result = WrongParameter(
+                name=param_name,
+                type=param_type,
+                value=input.value,
+                faulty=input.faulty,
+            )
+            self.wrong_inputs.append(result)
+    
+    def get_suggested_assertions(self) -> List[str]:
+        result = []
+        
+        if len(self.wrong_inputs) == 0: return result
+
+        conditions = [f"{ii.name} != {ii.value}" for ii in self.wrong_inputs if ii.faulty]
+        suggested = f"assert {" || ".join(conditions)};"
+        result.append(suggested)
+        return result
 
 
 @dataclass
