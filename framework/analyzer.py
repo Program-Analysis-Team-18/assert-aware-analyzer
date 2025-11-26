@@ -1,15 +1,19 @@
 from framework import syntaxer
 from framework import classifier
+from framework import score
 
 assert_map = syntaxer.run()
 assert_map = classifier.run(assert_map)
 # wrong_inputs = fuzzer
 # code_rewriter.run(assert_map, wrong_inputs)
 
+score.print_ground_truth_list(assert_map)
+
 # TODO: replace with Code Rewriter logic
-for c in assert_map.classes:
+'''for c in assert_map.classes:
     for m in c.methods:
         if len(m.assertions) > 0:
             print(f"\n=== CLASS: {c.class_name}, METHOD: {m.method_name} ===")
         for a in m.assertions:
             print(f"{a.assertion_node.text.decode()} // {a.classification}")
+'''
