@@ -3,7 +3,7 @@ import random
 import string
 from typing import Dict, Any
 import z3
-from framework.interpreter import interpret, InterpretationResult
+from interpreter import interpret, InterpretationResult
 
 
 class CustomType:
