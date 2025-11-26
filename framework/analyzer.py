@@ -1,5 +1,5 @@
-import syntaxer
-import classifier
+from framework import syntaxer
+from framework import classifier
 
 assert_map = syntaxer.run()
 assert_map = classifier.run(assert_map)

@@ -2,8 +2,9 @@ from pathlib import Path
 
 import z3
 
-from core import Map, Classification
-from solver import AssertSolver, GenerationInvoker, SolveResult
+from framework.core import Map, Classification
+
+from framework.solver import AssertSolver, GenerationInvoker, SolveResult
 
 
 def find_fully_qualified_method(method_name: str) -> str:
@@ -101,12 +102,12 @@ def run(assert_map: Map) -> Map:
                             continue
                         params_order = [p.name for p in m.parameters]
 
-                        for a in range(2,10):
+                        for index in range(2,10):
                             classification, depth = classify_advanced(result, method_id, params_order)
                             if classification != 'useful' or depth != 0:
                                 break
                             solver = AssertSolver([a.assertion_node])
-                            result = solver.solve(attempts=a)
+                            result = solver.solve(attempts=index)
                             
                 a.classification = classification
 

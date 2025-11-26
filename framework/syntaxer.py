@@ -9,7 +9,9 @@ from jpamb import model
 from pathlib import Path
 from typing import List
 
-from core import Parameter, Assertion, Method, Classes, Map, Classification
+from framework.core import Parameter, Assertion, Method, Classes, Map, Classification
+
+
 
 def parse_local_variables(method_node: Node, file_data: bytes) -> List[Parameter]:
     local_params = []
