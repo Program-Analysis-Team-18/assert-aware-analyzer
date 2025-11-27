@@ -4,6 +4,8 @@ import code_rewriter
 import utils
 from fuzzer import Fuzzer
 
+import time
+
 
 def resolve_method_ids(assert_map, logger):
     """
@@ -54,17 +56,27 @@ def run():
 
     # ASSERT CLASSIFICATION
     # (Z3 Solver + Param Generation Fuzzer + Interpreter)
-    assert_map = classifier.run(assert_map)
+    assert_map, time_measurements_classification = classifier.run(assert_map)
 
     # COVERAGE BASED FUZZING
     symbolic_exec_enable = True
-
+    start_time_fuzzing = time.time()
     run_fuzzing(assert_map, logger, symbolic_fuzzer=symbolic_exec_enable)
+    end_time_fuzzing = time.time()
+
+    time_measurements_fuzzing = end_time_fuzzing - start_time_fuzzing
 
     # CODE REWRITING
     # (Comments + Suggestions)
+    start_time_rewriting = time.time()
     code_rewriter.run(assert_map)
+    end_time_rewriting = time.time()
 
+    time_measurements_rewriting = end_time_rewriting - start_time_rewriting
+
+    print("Execution times:")
+    print(f"Classification syntatic: {time_measurements_classification["static"]}\nClassification dynamic: {time_measurements_classification["dynamic"]}")
+    print(f"Rewriting that uses fuzzing: {time_measurements_fuzzing + time_measurements_rewriting}")
 
 if __name__ == "__main__":
     run()
