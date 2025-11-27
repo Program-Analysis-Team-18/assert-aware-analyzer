@@ -3,16 +3,12 @@ from pathlib import Path
 
 assert_map = syntaxer.run()
 
-
-
-
-
 def print_ground_truth_list(assert_map):
     """ print all the assertions to /framework/ground_truth.txt """
     for c in assert_map.classes:
         for m in c.methods:
-            for a in m.assertions:
-                print(f"{c.class_name},{m.method_name},{a.absolute_start_line},{a.classification}")
+            for a in sorted(m.assertions, key=lambda x: x.absolute_start_line, reverse=False):
+                print(f"{c.class_name},{m.method_name},{a.absolute_start_line}")
 
 
 def load_ground_truth():
@@ -46,4 +42,4 @@ def calculate_performance(assert_map):
 
 # print_ground_truth_list(assert_map)                
     
-calculate_performance(assert_map)
+# calculate_performance(assert_map)
