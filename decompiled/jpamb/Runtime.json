@@ -89,7 +89,7 @@
                   }
                 ],
                 "is_interface": false,
-                "name": "lambda$main$0",
+                "name": "lambda$0",
                 "ref": {
                   "kind": "class",
                   "name": "jpamb/Runtime"
@@ -264,6 +264,58 @@
           }
         }
       }
+    },
+    {
+      "index": 4,
+      "method": {
+        "args": [
+          {
+            "type": "string",
+            "value": "Expected \u0001 to be static"
+          }
+        ],
+        "handle": {
+          "handletype": "method",
+          "kind": "static",
+          "method": {
+            "args": [
+              {
+                "kind": "class",
+                "name": "java/lang/invoke/MethodHandles$Lookup"
+              },
+              {
+                "kind": "class",
+                "name": "java/lang/String"
+              },
+              {
+                "kind": "class",
+                "name": "java/lang/invoke/MethodType"
+              },
+              {
+                "kind": "class",
+                "name": "java/lang/String"
+              },
+              {
+                "kind": "array",
+                "type": {
+                  "kind": "class",
+                  "name": "java/lang/Object"
+                }
+              }
+            ],
+            "is_interface": false,
+            "name": "makeConcatWithConstants",
+            "ref": {
+              "kind": "class",
+              "name": "java/lang/invoke/StringConcatFactory"
+            },
+            "returns": {
+              "kind": "class",
+              "name": "java/lang/invoke/CallSite"
+            }
+          }
+        }
+      }
     }
   ],
   "enclosingmethod": null,
@@ -305,26 +357,96 @@
       "access": [
         "public",
         "static",
+        "final"
+      ],
+      "class": "java/lang/invoke/MethodHandles$Lookup",
+      "name": "Lookup",
+      "outer": "java/lang/invoke/MethodHandles"
+    },
+    {
+      "access": [
+        "public",
+        "static",
         "final",
         "enum"
       ],
       "class": "jpamb/utils/CaseContent$ResultType",
       "name": "ResultType",
       "outer": "jpamb/utils/CaseContent"
-    },
-    {
-      "access": [
-        "public",
-        "static",
-        "final"
-      ],
-      "class": "java/lang/invoke/MethodHandles$Lookup",
-      "name": "Lookup",
-      "outer": "java/lang/invoke/MethodHandles"
     }
   ],
   "interfaces": [],
   "methods": [
+    {
+      "access": [
+        "static"
+      ],
+      "annotations": [],
+      "code": {
+        "annotations": [],
+        "bytecode": [
+          {
+            "access": "static",
+            "method": {
+              "args": [],
+              "is_interface": true,
+              "name": "of",
+              "ref": {
+                "kind": "class",
+                "name": "java/util/List"
+              },
+              "returns": {
+                "kind": "class",
+                "name": "java/util/List"
+              }
+            },
+            "offset": 0,
+            "opr": "invoke"
+          },
+          {
+            "field": {
+              "class": "jpamb/Runtime",
+              "name": "caseclasses",
+              "type": {
+                "kind": "class",
+                "name": "java/util/List"
+              }
+            },
+            "offset": 3,
+            "opr": "put",
+            "static": true
+          },
+          {
+            "offset": 6,
+            "opr": "return",
+            "type": null
+          }
+        ],
+        "exceptions": [],
+        "lines": [
+          {
+            "line": 19,
+            "offset": 0
+          },
+          {
+            "line": 25,
+            "offset": 2
+          }
+        ],
+        "max_locals": 0,
+        "max_stack": 1,
+        "stack_map": null
+      },
+      "default": null,
+      "exceptions": [],
+      "name": "<clinit>",
+      "params": [],
+      "returns": {
+        "annotations": [],
+        "type": null
+      },
+      "typeparams": []
+    },
     {
       "access": [
         "public"
@@ -1532,7 +1654,7 @@
           },
           {
             "line": 42,
-            "offset": 9
+            "offset": 8
           },
           {
             "line": 43,
@@ -1540,7 +1662,7 @@
           },
           {
             "line": 44,
-            "offset": 18
+            "offset": 17
           },
           {
             "line": 45,
@@ -1548,7 +1670,7 @@
           },
           {
             "line": 46,
-            "offset": 27
+            "offset": 26
           },
           {
             "line": 47,
@@ -1556,7 +1678,7 @@
           },
           {
             "line": 48,
-            "offset": 36
+            "offset": 35
           },
           {
             "line": 49,
@@ -1564,7 +1686,7 @@
           },
           {
             "line": 50,
-            "offset": 45
+            "offset": 44
           },
           {
             "line": 51,
@@ -1572,7 +1694,7 @@
           },
           {
             "line": 52,
-            "offset": 54
+            "offset": 53
           },
           {
             "line": 53,
@@ -1580,11 +1702,15 @@
           },
           {
             "line": 54,
-            "offset": 63
+            "offset": 62
           },
           {
             "line": 55,
             "offset": 67
+          },
+          {
+            "line": 56,
+            "offset": 71
           },
           {
             "line": 57,
@@ -1782,29 +1908,28 @@
             "opr": "invoke"
           },
           {
-            "index": 2,
             "offset": 19,
+            "opr": "dup",
+            "words": 1
+          },
+          {
+            "index": 5,
+            "offset": 20,
             "opr": "store",
             "type": "ref"
           },
           {
-            "index": 2,
-            "offset": 20,
-            "opr": "load",
-            "type": "ref"
-          },
-          {
-            "offset": 21,
+            "offset": 22,
             "opr": "arraylength"
           },
           {
-            "index": 3,
-            "offset": 22,
+            "index": 4,
+            "offset": 23,
             "opr": "store",
             "type": "int"
           },
           {
-            "offset": 23,
+            "offset": 25,
             "opr": "push",
             "value": {
               "type": "integer",
@@ -1812,61 +1937,48 @@
             }
           },
           {
-            "index": 4,
-            "offset": 24,
+            "index": 3,
+            "offset": 26,
             "opr": "store",
             "type": "int"
           },
           {
-            "index": 4,
-            "offset": 26,
-            "opr": "load",
-            "type": "int"
+            "offset": 27,
+            "opr": "goto",
+            "target": 25
           },
           {
-            "index": 3,
-            "offset": 28,
-            "opr": "load",
-            "type": "int"
-          },
-          {
-            "condition": "ge",
-            "offset": 29,
-            "opr": "if",
-            "target": 28
-          },
-          {
-            "index": 2,
-            "offset": 32,
+            "index": 5,
+            "offset": 30,
             "opr": "load",
             "type": "ref"
           },
           {
-            "index": 4,
-            "offset": 33,
+            "index": 3,
+            "offset": 32,
             "opr": "load",
             "type": "int"
           },
           {
-            "offset": 35,
+            "offset": 33,
             "opr": "array_load",
             "type": "ref"
           },
           {
-            "index": 5,
-            "offset": 36,
+            "index": 2,
+            "offset": 34,
             "opr": "store",
             "type": "ref"
           },
           {
-            "index": 5,
-            "offset": 38,
+            "index": 2,
+            "offset": 35,
             "opr": "load",
             "type": "ref"
           },
           {
             "index": 1,
-            "offset": 40,
+            "offset": 36,
             "opr": "load",
             "type": "ref"
           },
@@ -1891,28 +2003,41 @@
               },
               "returns": null
             },
-            "offset": 41,
+            "offset": 37,
             "opr": "invoke"
           },
           {
             "amount": 1,
-            "index": 4,
-            "offset": 44,
+            "index": 3,
+            "offset": 40,
             "opr": "incr"
           },
           {
-            "offset": 47,
-            "opr": "goto",
-            "target": 16
+            "index": 3,
+            "offset": 43,
+            "opr": "load",
+            "type": "int"
+          },
+          {
+            "index": 4,
+            "offset": 44,
+            "opr": "load",
+            "type": "int"
+          },
+          {
+            "condition": "lt",
+            "offset": 46,
+            "opr": "if",
+            "target": 17
           },
           {
             "index": 1,
-            "offset": 50,
+            "offset": 49,
             "opr": "load",
             "type": "ref"
           },
           {
-            "offset": 51,
+            "offset": 50,
             "opr": "push",
             "value": {
               "type": "string",
@@ -1938,17 +2063,17 @@
                 "name": "java/lang/StringBuilder"
               }
             },
-            "offset": 53,
+            "offset": 52,
             "opr": "invoke"
           },
           {
-            "offset": 56,
+            "offset": 55,
             "opr": "pop",
             "words": 1
           },
           {
             "index": 0,
-            "offset": 57,
+            "offset": 56,
             "opr": "load",
             "type": "ref"
           },
@@ -1966,12 +2091,12 @@
                 "name": "java/lang/Class"
               }
             },
-            "offset": 58,
+            "offset": 57,
             "opr": "invoke"
           },
           {
             "index": 1,
-            "offset": 61,
+            "offset": 60,
             "opr": "load",
             "type": "ref"
           },
@@ -1996,12 +2121,12 @@
               },
               "returns": null
             },
-            "offset": 62,
+            "offset": 61,
             "opr": "invoke"
           },
           {
             "index": 1,
-            "offset": 65,
+            "offset": 64,
             "opr": "load",
             "type": "ref"
           },
@@ -2019,11 +2144,11 @@
                 "name": "java/lang/String"
               }
             },
-            "offset": 66,
+            "offset": 65,
             "opr": "invoke"
           },
           {
-            "offset": 69,
+            "offset": 68,
             "opr": "return",
             "type": "ref"
           }
@@ -2044,11 +2169,11 @@
           },
           {
             "line": 65,
-            "offset": 23
+            "offset": 21
           },
           {
             "line": 64,
-            "offset": 26
+            "offset": 24
           },
           {
             "line": 67,
@@ -2067,7 +2192,7 @@
         "max_stack": 2,
         "stack_map": [
           {
-            "index": 16,
+            "index": 17,
             "locals": [
               {
                 "ref": {
@@ -2084,6 +2209,15 @@
                 "type": "object"
               },
               {
+                "type": "top"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              },
+              {
                 "ref": {
                   "kind": "array",
                   "type": {
@@ -2092,21 +2226,14 @@
                   }
                 },
                 "type": "object"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "integer"
               }
             ],
             "stack": [],
             "type": "full_frame"
           },
           {
-            "index": 28,
-            "info": 3,
-            "type": "chop_frame"
+            "index": 25,
+            "type": "same"
           }
         ]
       },
@@ -2192,46 +2319,19 @@
             "type": "int"
           },
           {
-            "index": 2,
             "offset": 10,
-            "opr": "load",
-            "type": "int"
+            "opr": "goto",
+            "target": 46
           },
           {
             "index": 0,
-            "offset": 11,
-            "opr": "load",
-            "type": "ref"
-          },
-          {
-            "access": "virtual",
-            "method": {
-              "args": [],
-              "name": "length",
-              "ref": {
-                "kind": "class",
-                "name": "java/lang/String"
-              },
-              "returns": "int"
-            },
-            "offset": 12,
-            "opr": "invoke"
-          },
-          {
-            "condition": "ge",
-            "offset": 15,
-            "opr": "if",
-            "target": 50
-          },
-          {
-            "index": 0,
-            "offset": 18,
+            "offset": 13,
             "opr": "load",
             "type": "ref"
           },
           {
             "index": 2,
-            "offset": 19,
+            "offset": 14,
             "opr": "load",
             "type": "int"
           },
@@ -2248,35 +2348,35 @@
               },
               "returns": "char"
             },
-            "offset": 20,
+            "offset": 15,
             "opr": "invoke"
           },
           {
-            "default": 48,
-            "offset": 23,
+            "default": 45,
+            "offset": 18,
             "opr": "lookupswitch",
             "targets": [
               {
                 "key": 67,
-                "target": 24
+                "target": 21
               },
               {
                 "key": 73,
-                "target": 14
+                "target": 11
               },
               {
                 "key": 90,
-                "target": 19
+                "target": 16
               },
               {
                 "key": 91,
-                "target": 29
+                "target": 26
               }
             ]
           },
           {
             "index": 1,
-            "offset": 64,
+            "offset": 60,
             "opr": "load",
             "type": "ref"
           },
@@ -2289,7 +2389,7 @@
                 "name": "java/lang/Class"
               }
             },
-            "offset": 65,
+            "offset": 61,
             "opr": "get",
             "static": true
           },
@@ -2309,23 +2409,23 @@
               },
               "returns": "boolean"
             },
-            "offset": 68,
+            "offset": 64,
             "opr": "invoke",
             "stack_size": 2
           },
           {
-            "offset": 73,
+            "offset": 69,
             "opr": "pop",
             "words": 1
           },
           {
-            "offset": 74,
+            "offset": 70,
             "opr": "goto",
-            "target": 48
+            "target": 45
           },
           {
             "index": 1,
-            "offset": 77,
+            "offset": 73,
             "opr": "load",
             "type": "ref"
           },
@@ -2338,7 +2438,7 @@
                 "name": "java/lang/Class"
               }
             },
-            "offset": 78,
+            "offset": 74,
             "opr": "get",
             "static": true
           },
@@ -2358,23 +2458,23 @@
               },
               "returns": "boolean"
             },
-            "offset": 81,
+            "offset": 77,
             "opr": "invoke",
             "stack_size": 2
           },
           {
-            "offset": 86,
+            "offset": 82,
             "opr": "pop",
             "words": 1
           },
           {
-            "offset": 87,
+            "offset": 83,
             "opr": "goto",
-            "target": 48
+            "target": 45
           },
           {
             "index": 1,
-            "offset": 90,
+            "offset": 86,
             "opr": "load",
             "type": "ref"
           },
@@ -2387,7 +2487,7 @@
                 "name": "java/lang/Class"
               }
             },
-            "offset": 91,
+            "offset": 87,
             "opr": "get",
             "static": true
           },
@@ -2407,35 +2507,35 @@
               },
               "returns": "boolean"
             },
-            "offset": 94,
+            "offset": 90,
             "opr": "invoke",
             "stack_size": 2
           },
           {
-            "offset": 99,
+            "offset": 95,
             "opr": "pop",
             "words": 1
           },
           {
-            "offset": 100,
+            "offset": 96,
             "opr": "goto",
-            "target": 48
+            "target": 45
           },
           {
             "amount": 1,
             "index": 2,
-            "offset": 103,
+            "offset": 99,
             "opr": "incr"
           },
           {
             "index": 0,
-            "offset": 106,
+            "offset": 102,
             "opr": "load",
             "type": "ref"
           },
           {
             "index": 2,
-            "offset": 107,
+            "offset": 103,
             "opr": "load",
             "type": "int"
           },
@@ -2452,36 +2552,36 @@
               },
               "returns": "char"
             },
-            "offset": 108,
+            "offset": 104,
             "opr": "invoke"
           },
           {
-            "default": 48,
-            "offset": 111,
+            "default": 45,
+            "offset": 107,
             "opr": "lookupswitch",
             "targets": [
               {
                 "key": 67,
-                "target": 44
+                "target": 41
               },
               {
                 "key": 73,
-                "target": 34
+                "target": 31
               },
               {
                 "key": 90,
-                "target": 39
+                "target": 36
               }
             ]
           },
           {
             "index": 1,
-            "offset": 144,
+            "offset": 140,
             "opr": "load",
             "type": "ref"
           },
           {
-            "offset": 145,
+            "offset": 141,
             "opr": "push",
             "value": {
               "type": "class",
@@ -2507,28 +2607,28 @@
               },
               "returns": "boolean"
             },
-            "offset": 147,
+            "offset": 143,
             "opr": "invoke",
             "stack_size": 2
           },
           {
-            "offset": 152,
+            "offset": 148,
             "opr": "pop",
             "words": 1
           },
           {
-            "offset": 153,
+            "offset": 149,
             "opr": "goto",
-            "target": 48
+            "target": 45
           },
           {
             "index": 1,
-            "offset": 156,
+            "offset": 152,
             "opr": "load",
             "type": "ref"
           },
           {
-            "offset": 157,
+            "offset": 153,
             "opr": "push",
             "value": {
               "type": "class",
@@ -2554,28 +2654,28 @@
               },
               "returns": "boolean"
             },
-            "offset": 159,
+            "offset": 155,
             "opr": "invoke",
             "stack_size": 2
           },
           {
-            "offset": 164,
+            "offset": 160,
             "opr": "pop",
             "words": 1
           },
           {
-            "offset": 165,
+            "offset": 161,
             "opr": "goto",
-            "target": 48
+            "target": 45
           },
           {
             "index": 1,
-            "offset": 168,
+            "offset": 164,
             "opr": "load",
             "type": "ref"
           },
           {
-            "offset": 169,
+            "offset": 165,
             "opr": "push",
             "value": {
               "type": "class",
@@ -2601,29 +2701,56 @@
               },
               "returns": "boolean"
             },
-            "offset": 171,
+            "offset": 167,
             "opr": "invoke",
             "stack_size": 2
           },
           {
-            "offset": 176,
+            "offset": 172,
             "opr": "pop",
             "words": 1
           },
           {
             "amount": 1,
             "index": 2,
-            "offset": 177,
+            "offset": 173,
             "opr": "incr"
           },
           {
-            "offset": 180,
-            "opr": "goto",
-            "target": 6
+            "index": 2,
+            "offset": 176,
+            "opr": "load",
+            "type": "int"
+          },
+          {
+            "index": 0,
+            "offset": 177,
+            "opr": "load",
+            "type": "ref"
+          },
+          {
+            "access": "virtual",
+            "method": {
+              "args": [],
+              "name": "length",
+              "ref": {
+                "kind": "class",
+                "name": "java/lang/String"
+              },
+              "returns": "int"
+            },
+            "offset": 178,
+            "opr": "invoke"
+          },
+          {
+            "condition": "lt",
+            "offset": 181,
+            "opr": "if",
+            "target": 7
           },
           {
             "index": 1,
-            "offset": 183,
+            "offset": 184,
             "opr": "load",
             "type": "ref"
           },
@@ -2638,13 +2765,13 @@
               },
               "returns": "int"
             },
-            "offset": 184,
+            "offset": 185,
             "opr": "invoke",
             "stack_size": 1
           },
           {
             "dim": 1,
-            "offset": 189,
+            "offset": 190,
             "opr": "newarray",
             "type": {
               "kind": "class",
@@ -2653,19 +2780,19 @@
           },
           {
             "index": 2,
-            "offset": 192,
+            "offset": 193,
             "opr": "store",
             "type": "ref"
           },
           {
             "index": 1,
-            "offset": 193,
+            "offset": 194,
             "opr": "load",
             "type": "ref"
           },
           {
             "index": 2,
-            "offset": 194,
+            "offset": 195,
             "opr": "load",
             "type": "ref"
           },
@@ -2694,23 +2821,23 @@
                 }
               }
             },
-            "offset": 195,
+            "offset": 196,
             "opr": "invoke",
             "stack_size": 2
           },
           {
-            "offset": 200,
+            "offset": 201,
             "opr": "pop",
             "words": 1
           },
           {
             "index": 2,
-            "offset": 201,
+            "offset": 202,
             "opr": "load",
             "type": "ref"
           },
           {
-            "offset": 202,
+            "offset": 203,
             "opr": "return",
             "type": "ref"
           }
@@ -2727,63 +2854,63 @@
           },
           {
             "line": 75,
-            "offset": 10
+            "offset": 7
           },
           {
             "line": 77,
-            "offset": 14
+            "offset": 11
           },
           {
             "line": 78,
-            "offset": 18
+            "offset": 15
           },
           {
             "line": 81,
-            "offset": 19
+            "offset": 16
           },
           {
             "line": 82,
-            "offset": 23
+            "offset": 20
           },
           {
             "line": 85,
-            "offset": 24
+            "offset": 21
           },
           {
             "line": 86,
-            "offset": 28
+            "offset": 25
           },
           {
             "line": 89,
-            "offset": 29
+            "offset": 26
           },
           {
             "line": 90,
-            "offset": 30
+            "offset": 27
           },
           {
             "line": 92,
-            "offset": 34
+            "offset": 31
           },
           {
             "line": 93,
-            "offset": 38
+            "offset": 35
           },
           {
             "line": 96,
-            "offset": 39
+            "offset": 36
           },
           {
             "line": 97,
-            "offset": 43
+            "offset": 40
           },
           {
             "line": 100,
-            "offset": 44
+            "offset": 41
           },
           {
             "line": 74,
-            "offset": 48
+            "offset": 45
           },
           {
             "line": 107,
@@ -2802,7 +2929,7 @@
         "max_stack": 2,
         "stack_map": [
           {
-            "index": 6,
+            "index": 7,
             "info": [
               {
                 "ref": {
@@ -2818,41 +2945,40 @@
             "type": "append_frame"
           },
           {
-            "index": 14,
+            "index": 11,
             "type": "same"
           },
           {
-            "index": 19,
+            "index": 16,
             "type": "same"
           },
           {
-            "index": 24,
+            "index": 21,
             "type": "same"
           },
           {
-            "index": 29,
+            "index": 26,
             "type": "same"
           },
           {
-            "index": 34,
+            "index": 31,
             "type": "same"
           },
           {
-            "index": 39,
+            "index": 36,
             "type": "same"
           },
           {
-            "index": 44,
+            "index": 41,
             "type": "same"
           },
           {
-            "index": 48,
+            "index": 45,
             "type": "same"
           },
           {
-            "index": 50,
-            "info": 1,
-            "type": "chop_frame"
+            "index": 46,
+            "type": "same"
           }
         ]
       },
@@ -3034,41 +3160,19 @@
             "stack_size": 1
           },
           {
-            "index": 2,
+            "index": 3,
             "offset": 35,
             "opr": "store",
             "type": "ref"
           },
           {
-            "index": 2,
             "offset": 36,
-            "opr": "load",
-            "type": "ref"
+            "opr": "goto",
+            "target": 73
           },
           {
-            "access": "interface",
-            "method": {
-              "args": [],
-              "name": "hasNext",
-              "ref": {
-                "kind": "class",
-                "name": "java/util/Iterator"
-              },
-              "returns": "boolean"
-            },
-            "offset": 37,
-            "opr": "invoke",
-            "stack_size": 1
-          },
-          {
-            "condition": "eq",
-            "offset": 42,
-            "opr": "ifz",
-            "target": 76
-          },
-          {
-            "index": 2,
-            "offset": 45,
+            "index": 3,
+            "offset": 39,
             "opr": "load",
             "type": "ref"
           },
@@ -3086,12 +3190,12 @@
                 "name": "java/lang/Object"
               }
             },
-            "offset": 46,
+            "offset": 40,
             "opr": "invoke",
             "stack_size": 1
           },
           {
-            "offset": 51,
+            "offset": 45,
             "opr": "checkcast",
             "type": {
               "kind": "class",
@@ -3099,14 +3203,14 @@
             }
           },
           {
-            "index": 3,
-            "offset": 54,
+            "index": 2,
+            "offset": 48,
             "opr": "store",
             "type": "ref"
           },
           {
-            "index": 3,
-            "offset": 55,
+            "index": 2,
+            "offset": 49,
             "opr": "load",
             "type": "ref"
           },
@@ -3133,33 +3237,32 @@
                 }
               }
             },
-            "offset": 56,
+            "offset": 50,
             "opr": "invoke"
           },
           {
-            "index": 4,
-            "offset": 59,
+            "offset": 53,
+            "opr": "dup",
+            "words": 1
+          },
+          {
+            "index": 7,
+            "offset": 54,
             "opr": "store",
             "type": "ref"
           },
           {
-            "index": 4,
-            "offset": 61,
-            "opr": "load",
-            "type": "ref"
-          },
-          {
-            "offset": 63,
+            "offset": 56,
             "opr": "arraylength"
           },
           {
-            "index": 5,
-            "offset": 64,
+            "index": 6,
+            "offset": 57,
             "opr": "store",
             "type": "int"
           },
           {
-            "offset": 66,
+            "offset": 59,
             "opr": "push",
             "value": {
               "type": "integer",
@@ -3167,55 +3270,42 @@
             }
           },
           {
-            "index": 6,
-            "offset": 67,
+            "index": 5,
+            "offset": 60,
             "opr": "store",
             "type": "int"
           },
           {
-            "index": 6,
-            "offset": 69,
-            "opr": "load",
-            "type": "int"
+            "offset": 62,
+            "opr": "goto",
+            "target": 70
           },
           {
-            "index": 5,
-            "offset": 71,
-            "opr": "load",
-            "type": "int"
-          },
-          {
-            "condition": "ge",
-            "offset": 73,
-            "opr": "if",
-            "target": 75
-          },
-          {
-            "index": 4,
-            "offset": 76,
+            "index": 7,
+            "offset": 65,
             "opr": "load",
             "type": "ref"
           },
           {
-            "index": 6,
-            "offset": 78,
+            "index": 5,
+            "offset": 67,
             "opr": "load",
             "type": "int"
           },
           {
-            "offset": 80,
+            "offset": 69,
             "opr": "array_load",
             "type": "ref"
           },
           {
-            "index": 7,
-            "offset": 81,
+            "index": 4,
+            "offset": 70,
             "opr": "store",
             "type": "ref"
           },
           {
-            "index": 7,
-            "offset": 83,
+            "index": 4,
+            "offset": 72,
             "opr": "load",
             "type": "ref"
           },
@@ -3233,7 +3323,7 @@
                 "name": "java/lang/String"
               }
             },
-            "offset": 85,
+            "offset": 74,
             "opr": "invoke",
             "stack_size": 1
           },
@@ -3257,18 +3347,18 @@
                 "name": "jpamb/utils/CaseContent"
               }
             },
-            "offset": 90,
+            "offset": 79,
             "opr": "invoke"
           },
           {
             "index": 8,
-            "offset": 93,
+            "offset": 82,
             "opr": "store",
             "type": "ref"
           },
           {
-            "index": 3,
-            "offset": 95,
+            "index": 2,
+            "offset": 84,
             "opr": "load",
             "type": "ref"
           },
@@ -3292,18 +3382,18 @@
                 "name": "java/lang/String"
               }
             },
-            "offset": 96,
+            "offset": 85,
             "opr": "invoke"
           },
           {
             "index": 9,
-            "offset": 99,
+            "offset": 88,
             "opr": "store",
             "type": "ref"
           },
           {
-            "index": 3,
-            "offset": 101,
+            "index": 2,
+            "offset": 90,
             "opr": "load",
             "type": "ref"
           },
@@ -3321,7 +3411,7 @@
                 "name": "java/lang/Class"
               }
             },
-            "offset": 102,
+            "offset": 91,
             "opr": "invoke"
           },
           {
@@ -3338,12 +3428,12 @@
                 "name": "java/lang/String"
               }
             },
-            "offset": 105,
+            "offset": 94,
             "opr": "invoke"
           },
           {
-            "index": 3,
-            "offset": 108,
+            "index": 2,
+            "offset": 97,
             "opr": "load",
             "type": "ref"
           },
@@ -3361,12 +3451,12 @@
                 "name": "java/lang/String"
               }
             },
-            "offset": 109,
+            "offset": 98,
             "opr": "invoke"
           },
           {
             "index": 9,
-            "offset": 112,
+            "offset": 101,
             "opr": "load",
             "type": "ref"
           },
@@ -3394,18 +3484,18 @@
                 "name": "java/lang/String"
               }
             },
-            "offset": 114,
+            "offset": 103,
             "opr": "invoke"
           },
           {
             "index": 10,
-            "offset": 119,
+            "offset": 108,
             "opr": "store",
             "type": "ref"
           },
           {
-            "index": 3,
-            "offset": 121,
+            "index": 2,
+            "offset": 110,
             "opr": "load",
             "type": "ref"
           },
@@ -3420,7 +3510,7 @@
               },
               "returns": "int"
             },
-            "offset": 122,
+            "offset": 111,
             "opr": "invoke"
           },
           {
@@ -3437,28 +3527,28 @@
               },
               "returns": "boolean"
             },
-            "offset": 125,
+            "offset": 114,
             "opr": "invoke"
           },
           {
             "condition": "ne",
-            "offset": 128,
+            "offset": 117,
             "opr": "ifz",
-            "target": 59
+            "target": 55
           },
           {
             "class": "java/lang/RuntimeException",
-            "offset": 131,
+            "offset": 120,
             "opr": "new"
           },
           {
-            "offset": 134,
+            "offset": 123,
             "opr": "dup",
             "words": 1
           },
           {
             "index": 10,
-            "offset": 135,
+            "offset": 124,
             "opr": "load",
             "type": "ref"
           },
@@ -3478,7 +3568,7 @@
                 "name": "java/lang/String"
               }
             },
-            "offset": 137,
+            "offset": 126,
             "opr": "invoke"
           },
           {
@@ -3498,11 +3588,11 @@
               },
               "returns": null
             },
-            "offset": 142,
+            "offset": 131,
             "opr": "invoke"
           },
           {
-            "offset": 145,
+            "offset": 134,
             "opr": "throw"
           },
           {
@@ -3514,12 +3604,12 @@
                 "name": "java/io/PrintStream"
               }
             },
-            "offset": 146,
+            "offset": 135,
             "opr": "get",
             "static": true
           },
           {
-            "offset": 149,
+            "offset": 138,
             "opr": "push",
             "value": {
               "type": "string",
@@ -3527,7 +3617,7 @@
             }
           },
           {
-            "offset": 151,
+            "offset": 140,
             "opr": "push",
             "value": {
               "type": "integer",
@@ -3536,7 +3626,7 @@
           },
           {
             "dim": 1,
-            "offset": 152,
+            "offset": 141,
             "opr": "newarray",
             "type": {
               "kind": "class",
@@ -3544,12 +3634,12 @@
             }
           },
           {
-            "offset": 155,
+            "offset": 144,
             "opr": "dup",
             "words": 1
           },
           {
-            "offset": 156,
+            "offset": 145,
             "opr": "push",
             "value": {
               "type": "integer",
@@ -3558,22 +3648,22 @@
           },
           {
             "index": 10,
-            "offset": 157,
+            "offset": 146,
             "opr": "load",
             "type": "ref"
           },
           {
-            "offset": 159,
+            "offset": 148,
             "opr": "array_store",
             "type": "ref"
           },
           {
-            "offset": 160,
+            "offset": 149,
             "opr": "dup",
             "words": 1
           },
           {
-            "offset": 161,
+            "offset": 150,
             "opr": "push",
             "value": {
               "type": "integer",
@@ -3582,12 +3672,12 @@
           },
           {
             "index": 8,
-            "offset": 162,
+            "offset": 151,
             "opr": "load",
             "type": "ref"
           },
           {
-            "offset": 164,
+            "offset": 153,
             "opr": "array_store",
             "type": "ref"
           },
@@ -3617,43 +3707,78 @@
                 "name": "java/io/PrintStream"
               }
             },
-            "offset": 165,
+            "offset": 154,
             "opr": "invoke"
           },
           {
-            "offset": 168,
+            "offset": 157,
             "opr": "pop",
             "words": 1
           },
           {
             "amount": 1,
-            "index": 6,
-            "offset": 169,
+            "index": 5,
+            "offset": 158,
             "opr": "incr"
           },
           {
-            "offset": 172,
-            "opr": "goto",
-            "target": 27
+            "index": 5,
+            "offset": 161,
+            "opr": "load",
+            "type": "int"
           },
           {
-            "offset": 175,
-            "opr": "goto",
-            "target": 12
+            "index": 6,
+            "offset": 163,
+            "opr": "load",
+            "type": "int"
           },
           {
-            "offset": 178,
+            "condition": "lt",
+            "offset": 165,
+            "opr": "if",
+            "target": 26
+          },
+          {
+            "index": 3,
+            "offset": 168,
+            "opr": "load",
+            "type": "ref"
+          },
+          {
+            "access": "interface",
+            "method": {
+              "args": [],
+              "name": "hasNext",
+              "ref": {
+                "kind": "class",
+                "name": "java/util/Iterator"
+              },
+              "returns": "boolean"
+            },
+            "offset": 169,
+            "opr": "invoke",
+            "stack_size": 1
+          },
+          {
+            "condition": "ne",
+            "offset": 174,
+            "opr": "ifz",
+            "target": 13
+          },
+          {
+            "offset": 177,
             "opr": "return",
             "type": null
           },
           {
             "index": 0,
-            "offset": 179,
+            "offset": 178,
             "opr": "load",
             "type": "ref"
           },
           {
-            "offset": 180,
+            "offset": 179,
             "opr": "push",
             "value": {
               "type": "integer",
@@ -3661,18 +3786,18 @@
             }
           },
           {
-            "offset": 181,
+            "offset": 180,
             "opr": "array_load",
             "type": "ref"
           },
           {
             "index": 1,
-            "offset": 182,
+            "offset": 181,
             "opr": "store",
             "type": "ref"
           },
           {
-            "offset": 183,
+            "offset": 182,
             "opr": "push",
             "value": {
               "type": "string",
@@ -4077,7 +4202,7 @@
           },
           {
             "access": "dynamic",
-            "index": 3,
+            "index": 4,
             "method": {
               "args": [
                 {
@@ -4133,41 +4258,24 @@
             "type": "int"
           },
           {
-            "index": 8,
             "offset": 271,
-            "opr": "load",
-            "type": "int"
+            "opr": "goto",
+            "target": 158
           },
           {
             "index": 0,
-            "offset": 273,
-            "opr": "load",
-            "type": "ref"
-          },
-          {
             "offset": 274,
-            "opr": "arraylength"
-          },
-          {
-            "condition": "ge",
-            "offset": 275,
-            "opr": "if",
-            "target": 162
-          },
-          {
-            "index": 0,
-            "offset": 278,
             "opr": "load",
             "type": "ref"
           },
           {
             "index": 8,
-            "offset": 279,
+            "offset": 275,
             "opr": "load",
             "type": "int"
           },
           {
-            "offset": 281,
+            "offset": 277,
             "opr": "array_load",
             "type": "ref"
           },
@@ -4194,12 +4302,12 @@
                 }
               }
             },
-            "offset": 282,
+            "offset": 278,
             "opr": "invoke"
           },
           {
             "index": 9,
-            "offset": 285,
+            "offset": 281,
             "opr": "store",
             "type": "ref"
           },
@@ -4212,12 +4320,12 @@
                 "name": "java/io/PrintStream"
               }
             },
-            "offset": 287,
+            "offset": 283,
             "opr": "get",
             "static": true
           },
           {
-            "offset": 290,
+            "offset": 286,
             "opr": "push",
             "value": {
               "type": "string",
@@ -4225,7 +4333,7 @@
             }
           },
           {
-            "offset": 293,
+            "offset": 289,
             "opr": "push",
             "value": {
               "type": "integer",
@@ -4234,7 +4342,7 @@
           },
           {
             "dim": 1,
-            "offset": 294,
+            "offset": 290,
             "opr": "newarray",
             "type": {
               "kind": "class",
@@ -4242,12 +4350,12 @@
             }
           },
           {
-            "offset": 297,
+            "offset": 293,
             "opr": "dup",
             "words": 1
           },
           {
-            "offset": 298,
+            "offset": 294,
             "opr": "push",
             "value": {
               "type": "integer",
@@ -4256,22 +4364,22 @@
           },
           {
             "index": 7,
-            "offset": 299,
+            "offset": 295,
             "opr": "load",
             "type": "ref"
           },
           {
-            "offset": 301,
+            "offset": 297,
             "opr": "array_store",
             "type": "ref"
           },
           {
-            "offset": 302,
+            "offset": 298,
             "opr": "dup",
             "words": 1
           },
           {
-            "offset": 303,
+            "offset": 299,
             "opr": "push",
             "value": {
               "type": "integer",
@@ -4280,7 +4388,7 @@
           },
           {
             "index": 9,
-            "offset": 304,
+            "offset": 300,
             "opr": "load",
             "type": "ref"
           },
@@ -4307,11 +4415,11 @@
                 "name": "java/lang/String"
               }
             },
-            "offset": 306,
+            "offset": 302,
             "opr": "invoke"
           },
           {
-            "offset": 309,
+            "offset": 305,
             "opr": "array_store",
             "type": "ref"
           },
@@ -4341,28 +4449,28 @@
                 "name": "java/io/PrintStream"
               }
             },
-            "offset": 310,
+            "offset": 306,
             "opr": "invoke"
           },
           {
-            "offset": 313,
+            "offset": 309,
             "opr": "pop",
             "words": 1
           },
           {
             "index": 7,
-            "offset": 314,
+            "offset": 310,
             "opr": "load",
             "type": "ref"
           },
           {
-            "offset": 316,
+            "offset": 312,
             "opr": "push",
             "value": null
           },
           {
             "index": 9,
-            "offset": 317,
+            "offset": 313,
             "opr": "load",
             "type": "ref"
           },
@@ -4392,22 +4500,22 @@
                 "name": "java/lang/Object"
               }
             },
-            "offset": 319,
+            "offset": 315,
             "opr": "invoke"
           },
           {
-            "offset": 322,
+            "offset": 318,
             "opr": "pop",
             "words": 1
           },
           {
-            "offset": 323,
+            "offset": 319,
             "opr": "goto",
-            "target": 160
+            "target": 157
           },
           {
             "index": 10,
-            "offset": 326,
+            "offset": 322,
             "opr": "store",
             "type": "ref"
           },
@@ -4420,13 +4528,13 @@
                 "name": "java/io/PrintStream"
               }
             },
-            "offset": 328,
+            "offset": 324,
             "opr": "get",
             "static": true
           },
           {
             "index": 10,
-            "offset": 331,
+            "offset": 327,
             "opr": "load",
             "type": "ref"
           },
@@ -4444,7 +4552,7 @@
                 "name": "java/lang/Throwable"
               }
             },
-            "offset": 333,
+            "offset": 329,
             "opr": "invoke"
           },
           {
@@ -4467,7 +4575,7 @@
                 "name": "jpamb/utils/CaseContent$ResultType"
               }
             },
-            "offset": 336,
+            "offset": 332,
             "opr": "invoke"
           },
           {
@@ -4486,24 +4594,41 @@
               },
               "returns": null
             },
-            "offset": 339,
+            "offset": 335,
             "opr": "invoke"
           },
           {
-            "offset": 342,
+            "offset": 338,
             "opr": "return",
             "type": null
           },
           {
             "amount": 1,
             "index": 8,
-            "offset": 343,
+            "offset": 339,
             "opr": "incr"
           },
           {
+            "index": 8,
+            "offset": 342,
+            "opr": "load",
+            "type": "int"
+          },
+          {
+            "index": 0,
+            "offset": 344,
+            "opr": "load",
+            "type": "ref"
+          },
+          {
+            "offset": 345,
+            "opr": "arraylength"
+          },
+          {
+            "condition": "lt",
             "offset": 346,
-            "opr": "goto",
-            "target": 123
+            "opr": "if",
+            "target": 124
           },
           {
             "field": {
@@ -4559,9 +4684,9 @@
         "exceptions": [
           {
             "catchType": "java/lang/reflect/InvocationTargetException",
-            "end": 152,
-            "handler": 153,
-            "start": 147
+            "end": 149,
+            "handler": 150,
+            "start": 144
           }
         ],
         "lines": [
@@ -4579,39 +4704,39 @@
           },
           {
             "line": 118,
-            "offset": 19
+            "offset": 17
           },
           {
             "line": 119,
-            "offset": 34
+            "offset": 30
           },
           {
             "line": 120,
-            "offset": 38
+            "offset": 34
           },
           {
             "line": 121,
-            "offset": 41
+            "offset": 37
           },
           {
             "line": 122,
-            "offset": 49
+            "offset": 45
           },
           {
             "line": 123,
-            "offset": 53
+            "offset": 49
           },
           {
             "line": 125,
-            "offset": 59
+            "offset": 55
           },
           {
             "line": 118,
-            "offset": 73
+            "offset": 69
           },
           {
-            "line": 127,
-            "offset": 75
+            "line": 117,
+            "offset": 73
           },
           {
             "line": 128,
@@ -4663,35 +4788,31 @@
           },
           {
             "line": 142,
-            "offset": 127
+            "offset": 124
           },
           {
             "line": 143,
-            "offset": 132
+            "offset": 129
           },
           {
             "line": 145,
-            "offset": 147
-          },
-          {
-            "line": 149,
-            "offset": 152
+            "offset": 144
           },
           {
             "line": 146,
-            "offset": 153
+            "offset": 149
           },
           {
             "line": 147,
-            "offset": 154
+            "offset": 151
           },
           {
             "line": 148,
-            "offset": 159
+            "offset": 156
           },
           {
             "line": 141,
-            "offset": 160
+            "offset": 157
           },
           {
             "line": 151,
@@ -4706,27 +4827,7 @@
         "max_stack": 6,
         "stack_map": [
           {
-            "index": 12,
-            "info": [
-              {
-                "ref": {
-                  "kind": "class",
-                  "name": "java/util/List"
-                },
-                "type": "object"
-              },
-              {
-                "ref": {
-                  "kind": "class",
-                  "name": "java/util/Iterator"
-                },
-                "type": "object"
-              }
-            ],
-            "type": "append_frame"
-          },
-          {
-            "index": 27,
+            "index": 13,
             "locals": [
               {
                 "ref": {
@@ -4746,41 +4847,21 @@
                 "type": "object"
               },
               {
+                "type": "top"
+              },
+              {
                 "ref": {
                   "kind": "class",
                   "name": "java/util/Iterator"
                 },
                 "type": "object"
-              },
-              {
-                "ref": {
-                  "kind": "class",
-                  "name": "java/lang/reflect/Method"
-                },
-                "type": "object"
-              },
-              {
-                "ref": {
-                  "kind": "array",
-                  "type": {
-                    "kind": "class",
-                    "name": "jpamb/utils/Case"
-                  }
-                },
-                "type": "object"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "integer"
               }
             ],
             "stack": [],
             "type": "full_frame"
           },
           {
-            "index": 59,
+            "index": 26,
             "locals": [
               {
                 "ref": {
@@ -4802,7 +4883,57 @@
               {
                 "ref": {
                   "kind": "class",
+                  "name": "java/lang/reflect/Method"
+                },
+                "type": "object"
+              },
+              {
+                "ref": {
+                  "kind": "class",
                   "name": "java/util/Iterator"
+                },
+                "type": "object"
+              },
+              {
+                "type": "top"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "ref": {
+                  "kind": "array",
+                  "type": {
+                    "kind": "class",
+                    "name": "jpamb/utils/Case"
+                  }
+                },
+                "type": "object"
+              }
+            ],
+            "stack": [],
+            "type": "full_frame"
+          },
+          {
+            "index": 55,
+            "locals": [
+              {
+                "ref": {
+                  "kind": "array",
+                  "type": {
+                    "kind": "class",
+                    "name": "java/lang/String"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "ref": {
+                  "kind": "class",
+                  "name": "java/util/List"
                 },
                 "type": "object"
               },
@@ -4815,11 +4946,15 @@
               },
               {
                 "ref": {
-                  "kind": "array",
-                  "type": {
-                    "kind": "class",
-                    "name": "jpamb/utils/Case"
-                  }
+                  "kind": "class",
+                  "name": "java/util/Iterator"
+                },
+                "type": "object"
+              },
+              {
+                "ref": {
+                  "kind": "class",
+                  "name": "jpamb/utils/Case"
                 },
                 "type": "object"
               },
@@ -4831,8 +4966,11 @@
               },
               {
                 "ref": {
-                  "kind": "class",
-                  "name": "jpamb/utils/Case"
+                  "kind": "array",
+                  "type": {
+                    "kind": "class",
+                    "name": "jpamb/utils/Case"
+                  }
                 },
                 "type": "object"
               },
@@ -4862,7 +5000,7 @@
             "type": "full_frame"
           },
           {
-            "index": 75,
+            "index": 70,
             "locals": [
               {
                 "ref": {
@@ -4884,6 +5022,66 @@
               {
                 "ref": {
                   "kind": "class",
+                  "name": "java/lang/reflect/Method"
+                },
+                "type": "object"
+              },
+              {
+                "ref": {
+                  "kind": "class",
+                  "name": "java/util/Iterator"
+                },
+                "type": "object"
+              },
+              {
+                "type": "top"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "ref": {
+                  "kind": "array",
+                  "type": {
+                    "kind": "class",
+                    "name": "jpamb/utils/Case"
+                  }
+                },
+                "type": "object"
+              }
+            ],
+            "stack": [],
+            "type": "full_frame"
+          },
+          {
+            "index": 73,
+            "locals": [
+              {
+                "ref": {
+                  "kind": "array",
+                  "type": {
+                    "kind": "class",
+                    "name": "java/lang/String"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "ref": {
+                  "kind": "class",
+                  "name": "java/util/List"
+                },
+                "type": "object"
+              },
+              {
+                "type": "top"
+              },
+              {
+                "ref": {
+                  "kind": "class",
                   "name": "java/util/Iterator"
                 },
                 "type": "object"
@@ -4893,14 +5091,21 @@
             "type": "full_frame"
           },
           {
-            "index": 76,
-            "info": 1,
-            "type": "chop_frame"
-          },
-          {
             "index": 77,
-            "info": 1,
-            "type": "chop_frame"
+            "locals": [
+              {
+                "ref": {
+                  "kind": "array",
+                  "type": {
+                    "kind": "class",
+                    "name": "java/lang/String"
+                  }
+                },
+                "type": "object"
+              }
+            ],
+            "stack": [],
+            "type": "full_frame"
           },
           {
             "index": 121,
@@ -4969,7 +5174,7 @@
             "type": "full_frame"
           },
           {
-            "index": 123,
+            "index": 124,
             "info": [
               {
                 "type": "integer"
@@ -4978,7 +5183,7 @@
             "type": "append_frame"
           },
           {
-            "index": 153,
+            "index": 150,
             "locals": [
               {
                 "ref": {
@@ -5065,14 +5270,13 @@
             "type": "full_frame"
           },
           {
-            "index": 160,
+            "index": 157,
             "info": 1,
             "type": "chop_frame"
           },
           {
-            "index": 162,
-            "info": 1,
-            "type": "chop_frame"
+            "index": 158,
+            "type": "same"
           },
           {
             "index": 165,
@@ -5243,7 +5447,7 @@
       },
       "default": null,
       "exceptions": [],
-      "name": "lambda$main$0",
+      "name": "lambda$0",
       "params": [
         {
           "annotations": [],
@@ -5265,72 +5469,6 @@
           "kind": "class",
           "name": "java/util/stream/Stream"
         }
-      },
-      "typeparams": []
-    },
-    {
-      "access": [
-        "static"
-      ],
-      "annotations": [],
-      "code": {
-        "annotations": [],
-        "bytecode": [
-          {
-            "access": "static",
-            "method": {
-              "args": [],
-              "is_interface": true,
-              "name": "of",
-              "ref": {
-                "kind": "class",
-                "name": "java/util/List"
-              },
-              "returns": {
-                "kind": "class",
-                "name": "java/util/List"
-              }
-            },
-            "offset": 0,
-            "opr": "invoke"
-          },
-          {
-            "field": {
-              "class": "jpamb/Runtime",
-              "name": "caseclasses",
-              "type": {
-                "kind": "class",
-                "name": "java/util/List"
-              }
-            },
-            "offset": 3,
-            "opr": "put",
-            "static": true
-          },
-          {
-            "offset": 6,
-            "opr": "return",
-            "type": null
-          }
-        ],
-        "exceptions": [],
-        "lines": [
-          {
-            "line": 19,
-            "offset": 0
-          }
-        ],
-        "max_locals": 0,
-        "max_stack": 1,
-        "stack_map": null
-      },
-      "default": null,
-      "exceptions": [],
-      "name": "<clinit>",
-      "params": [],
-      "returns": {
-        "annotations": [],
-        "type": null
       },
       "typeparams": []
     }

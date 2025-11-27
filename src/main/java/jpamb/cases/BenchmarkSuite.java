@@ -46,9 +46,18 @@ public class BenchmarkSuite {
 
     @Tag({ USELESS_ASSERT })
     public static void divideByN(int x, int n) {
-        assert n != 10;
+        assert n != 12;
 
         int result = x / n;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void divideByNMinus12(int x, int n) {
+        assert n != 0;
+
+        if (x == 10) {
+            int result = x / (n - 12);
+        }
     }
 
     // ===================
