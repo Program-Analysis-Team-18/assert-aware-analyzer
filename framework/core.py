@@ -99,7 +99,8 @@ class Method:
         
         if len(self.wrong_inputs) == 0: return result
 
-        conditions = [f"{ii.name} != {ii.value}" for ii in self.wrong_inputs if ii.faulty]
+        no_faulty = all(not wi.faulty for wi in self.wrong_inputs)
+        conditions = [f"{wi.name} != {wi.value}" for wi in self.wrong_inputs if wi.faulty or no_faulty]
         suggested = f"assert {" || ".join(conditions)};"
         result.append(suggested)
         return result
