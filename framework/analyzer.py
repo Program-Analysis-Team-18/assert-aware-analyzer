@@ -1,50 +1,69 @@
-from pathlib import Path
-
 import syntaxer
 import classifier
 import code_rewriter
+import utils
 from fuzzer import Fuzzer
 
 
-def find_fully_qualified_method(method_name: str) -> str:
+def resolve_method_ids(assert_map, logger):
     """
-    Lookup the fully-qualified method id in `framework/methods.txt` by method name.
-    Returns the first matching fully-qualified string.
+    Assign fully-qualified method IDs to each method using utils.find_fully_qualified_method.
+    Methods whose IDs cannot be resolved are skipped.
     """
-    methods_file = Path(__file__).parent.joinpath("methods.txt")
-    if not methods_file.exists():
-        raise FileNotFoundError(f"methods file not found: {methods_file}")
+    for cls in assert_map.classes:
+        for method in cls.methods:
+            try:
+                method_id = utils.find_fully_qualified_method(method.method_name)
+                method.set_method_id(method_id)
+            except Exception as e:
+                logger.warning(f"Could not resolve method id for {method.method_name}: {e}")
 
-    with methods_file.open() as f:
-        for line in f:
-            s = line.strip()
-            if method_name in s:
-                return s
-    raise ValueError(f"No method found for name {method_name!r} in {methods_file}")
+
+def run_fuzzing(assert_map, logger):
+    """
+    Run fuzzing for every method that has parameters.
+    Collect wrong inputs from the fuzzer and attach them to the Method object.
+    """
+    for cls in assert_map.classes:
+        for method in cls.methods:
+            if not method.parameters:
+                continue
+
+            if not hasattr(method, "method_id"):
+                logger.warning(f"Method {method.method_name} has no method_id. Skipping fuzzer.")
+                continue
+
+            try:
+                fuzzer = Fuzzer(method.method_id)
+                fuzzer.fuzz()
+
+                for wrong_inputs_set in fuzzer.wrong_inputs:
+                    method.add_wrong_inputs(wrong_inputs_set)
+
+            except Exception as e:
+                logger.error(f"Fuzzer failed for {method.method_name}: {e}")
+
+
+def run():
+    logger = utils.configure_logger()
+
+    # SYNTACTIC ANALYSIS
+    assert_map = syntaxer.run()
+
+    resolve_method_ids(assert_map, logger)
+
+    # ASSERT CLASSIFICATION
+    # (Z3 Solver + Param Generation Fuzzer + Interpreter)
+    assert_map = classifier.run(assert_map)
+
+    # COVERAGE BASED FUZZING
+    # TODO: integrate Symbolic Execution
+    run_fuzzing(assert_map, logger)
+
+    # CODE REWRITING
+    # (Comments + Suggestions)
+    code_rewriter.run(assert_map)
 
 
 if __name__ == "__main__":
-    assert_map = syntaxer.run()
-
-    for c in assert_map.classes:
-        for m in c.methods:
-            if len(m.assertions) > 0:
-                try:
-                    method_id = find_fully_qualified_method(m.method_name)
-                    m.set_method_id(method_id)
-                except Exception as e:
-                    print(f"Could not resolve method id for {m.method_name}: {e}")
-                    continue
-
-    assert_map = classifier.run(assert_map)
-
-    for c in assert_map.classes:
-        for m in c.methods:
-            print("ANALYSING METHOD: ", m.method_name)
-            if len(m.assertions) > 0:
-                fuzzer = Fuzzer(m.method_id)
-                fuzzer.fuzz()
-                m.add_wrong_args(fuzzer.wrong_args)
-                
-    # TODO add the code rewriter should suggest assertions only with faulty = True
-    code_rewriter.run(assert_map)
+    run()
