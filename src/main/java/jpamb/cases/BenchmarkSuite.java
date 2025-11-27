@@ -1,5 +1,7 @@
 package jpamb.cases;
 
+import jpamb.utils.CappedInteger;
+import jpamb.utils.PositiveInteger;
 import jpamb.utils.Tag;
 
 import static jpamb.utils.Tag.TagType.*;
@@ -44,7 +46,8 @@ public class BenchmarkSuite {
 
     @Tag({ USELESS_ASSERT })
     public static void divideByN(int x, int n) {
-        assert n != 5;
+        assert n != 10;
+
         int result = x / n;
     }
 
