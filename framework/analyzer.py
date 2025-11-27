@@ -19,7 +19,7 @@ def resolve_method_ids(assert_map, logger):
                 logger.warning(f"Could not resolve method id for {method.method_name}: {e}")
 
 
-def run_fuzzing(assert_map, logger):
+def run_fuzzing(assert_map, logger, symbolic_fuzzer=False):
     """
     Run fuzzing for every method that has parameters.
     Collect wrong inputs from the fuzzer and attach them to the Method object.
@@ -34,7 +34,7 @@ def run_fuzzing(assert_map, logger):
                 continue
 
             try:
-                fuzzer = Fuzzer(method.method_id)
+                fuzzer = Fuzzer(method.method_id, symbolic_corpus=symbolic_fuzzer)
                 fuzzer.fuzz()
 
                 for wrong_inputs_set in fuzzer.wrong_inputs:
@@ -57,8 +57,9 @@ def run():
     assert_map = classifier.run(assert_map)
 
     # COVERAGE BASED FUZZING
-    # TODO: integrate Symbolic Execution
-    run_fuzzing(assert_map, logger)
+    symbolic_exec_enable = True
+
+    run_fuzzing(assert_map, logger, symbolic_fuzzer=symbolic_exec_enable)
 
     # CODE REWRITING
     # (Comments + Suggestions)
