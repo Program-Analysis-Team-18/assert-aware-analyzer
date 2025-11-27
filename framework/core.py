@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import List, Literal
+from dataclasses import dataclass, field
+from typing import List, Literal, Any
 from tree_sitter import Point, Node
 from pathlib import Path
 
@@ -12,6 +12,21 @@ Classification = Literal[
     "useless",
     "unclassified",
 ]
+
+
+@dataclass
+class WrongInput:
+    value: Any
+    faulty: bool
+    is_obj: bool
+
+
+@dataclass
+class WrongParameter:
+    name: str
+    type: str
+    value: Any
+    faulty: bool
 
 @dataclass
 class Parameter:
@@ -26,14 +41,14 @@ class Parameter:
 
 @dataclass
 class Assertion:
-    absolute_start_line: Point
-    absolute_end_line: Point
+    absolute_start_point: Point
+    absolute_end_point: Point
     assertion_node: Node
     classification: Classification 
     
     def __init__(self, absolute_start_line: Point, absolute_end_line: Point, assertion_node: Node, classification: str):
-        self.absolute_start_line = absolute_start_line
-        self.absolute_end_line = absolute_end_line
+        self.absolute_start_point = absolute_start_line
+        self.absolute_end_point = absolute_end_line
         self.assertion_node = assertion_node
         self.classification = classification
         
@@ -41,11 +56,13 @@ class Assertion:
 @dataclass
 class Method:
     method_name: str
+    method_id: str
     method_node: Node
     parameters: List[Parameter]
     assertions: List[Assertion]
     local_variables: List[Parameter]
     change_state: bool
+    wrong_inputs: List[WrongParameter]
     
     def __init__(self, method_name: str,  method_node: Node, parameters: List[Parameter], assertions: List[Assertion], local_variables: List[Parameter]):
         self.method_name = method_name
@@ -54,6 +71,39 @@ class Method:
         self.assertions = assertions
         self.local_variables = local_variables
         self.change_state = False
+        self.wrong_inputs = []
+
+    def set_method_id(self, method_id: str):
+        self.method_id = method_id
+        
+    def add_wrong_inputs(self, inputs: List[WrongInput]):
+        result: WrongParameter
+        for i in range(len(inputs)):
+            param_name = self.parameters[i].name
+            param_type = self.parameters[i].type
+            input = inputs[i]
+
+            if input.is_obj:
+                param_name = f'{param_name}.get()'
+
+            result = WrongParameter(
+                name=param_name,
+                type=param_type,
+                value=input.value,
+                faulty=input.faulty,
+            )
+            self.wrong_inputs.append(result)
+    
+    def get_suggested_assertions(self) -> List[str]:
+        result = []
+        
+        if len(self.wrong_inputs) == 0: return result
+
+        no_faulty = all(not wi.faulty for wi in self.wrong_inputs)
+        conditions = [f"{wi.name} != {wi.value}" for wi in self.wrong_inputs if wi.faulty or no_faulty]
+        suggested = f"assert {" || ".join(conditions)};"
+        result.append(suggested)
+        return result
 
 
 @dataclass
@@ -113,6 +163,8 @@ class Map:
     #             cls.add_method(method)
 
     def print_mapping(self):
+        if not self.classes:
+            print("Mapping is empty")
         for cls in self.classes:
             print(f"\n=== Class: {cls.class_name} ===")
             print(f"Average assertions per method: {cls.average_assertion_per_method}")
@@ -134,7 +186,7 @@ class Map:
                 if method.assertions:
                     print("    Assertions:")
                     for assertion in method.assertions:
-                        start_line = assertion.absolute_start_line
+                        start_line = assertion.absolute_start_point
                         print(f"      - {assertion.classification} (line {start_line})")
                 else:
                     print("    Assertions: None")

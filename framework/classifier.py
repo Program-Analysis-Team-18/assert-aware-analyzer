@@ -1,27 +1,7 @@
-from pathlib import Path
-
 import z3
 
-from framework.core import Map, Classification
-
-from framework.solver import AssertSolver, GenerationInvoker, SolveResult
-
-
-def find_fully_qualified_method(method_name: str) -> str:
-    """
-    Lookup the fully-qualified method id in `framework/methods.txt` by method name.
-    Returns the first matching fully-qualified string.
-    """
-    methods_file = Path(__file__).parent.joinpath("methods.txt")
-    if not methods_file.exists():
-        raise FileNotFoundError(f"methods file not found: {methods_file}")
-
-    with methods_file.open() as f:
-        for line in f:
-            s = line.strip()
-            if method_name in s:
-                return s
-    raise ValueError(f"No method found for name {method_name!r} in {methods_file}")
+from core import Map, Classification
+from solver import AssertSolver, GenerationInvoker, SolveResult
 
 
 def classify_base(result: SolveResult) -> Classification:
@@ -95,19 +75,15 @@ def run(assert_map: Map) -> Map:
                     # advanced classification
                     if classification == 'contingent':
                         # find method id from methods.txt using method name
-                        try:
-                            method_id = find_fully_qualified_method(m.method_name)
-                        except Exception as e:
-                            print(f"Could not resolve method id for {m.method_name}: {e}")
-                            continue
+                        # TODO: extract logic in analyzer
                         params_order = [p.name for p in m.parameters]
 
-                        for index in range(2,10):
-                            classification, depth = classify_advanced(result, method_id, params_order)
+                        for i in range(2,10):
+                            classification, depth = classify_advanced(result, m.method_id, params_order)
                             if classification != 'useful' or depth != 0:
                                 break
                             solver = AssertSolver([a.assertion_node])
-                            result = solver.solve(attempts=index)
+                            result = solver.solve(attempts=i)
                             
                 a.classification = classification
 

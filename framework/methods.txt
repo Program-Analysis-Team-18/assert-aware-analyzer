@@ -28,3 +28,12 @@ jpamb.cases.ComplexNestedSideEffect.nestedSideEffectsWithLogicalOps:()V
 jpamb.cases.ComplexNestedSideEffect.chainedSideEffects:()V
 jpamb.cases.ComplexNestedSideEffect.nestedArraySideEffects:()V
 jpamb.cases.ComplexNestedSideEffect.recursiveNestedSideEffects:()V
+
+jpamb.cases.BenchmarkSuite.divideByN:(II)V
+jpamb.cases.BenchmarkSuite.divideByNMinus10:(III)V
+jpamb.cases.BenchmarkSuite.withdraw:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V
+jpamb.cases.BenchmarkSuite.normalizeEdgeWeight:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;Ljpamb/utils/CappedInteger<init>II;)V
+jpamb.cases.BenchmarkSuite.calculateInterest:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;)V
+jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V
+jpamb.cases.BenchmarkSuite.extractBlock:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;Ljpamb/utils/CappedInteger<init>II;)V
+jpamb.cases.BenchmarkSuite.extractPacketWindow:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;)V
