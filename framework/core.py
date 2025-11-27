@@ -142,6 +142,9 @@ class Map:
     def __init__(self):
         self.classes = []
 
+    def append(self, cls: Classes):
+        self.classes.append(cls)
+
     def add_class(self, class_name: str, class_file_path: Path):
         self.classes.append(Classes(class_name, class_file_path))
     

@@ -413,7 +413,7 @@ def from_class_get_method_nodes(cls: Classes):
         cls.add_method(get_method_data(method_name, method_node, file_data))
 
 def parse_classes(assertion_map: Map):
-    root = "src/main/java/jpamb/cases/"
+    root = "src/main/java/jpamb/"
     java_files = list(Path(root).rglob("*.java"))
 
     for class_file in java_files:
@@ -449,7 +449,9 @@ def run() -> Map:
     start_syntactic_analysis(assertion_mapping)
     # assertion_mapping.print_mapping()
 
-    return assertion_mapping
+    mapping_output = Map()
+    mapping_output.append(assertion_mapping.return_class("BenchmarkSuite"))
+    return mapping_output
 
 if __name__ == "__main__":
     setup()
