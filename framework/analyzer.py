@@ -4,6 +4,8 @@ import code_rewriter
 import utils
 from fuzzer import Fuzzer
 
+import time
+
 
 def resolve_method_ids(assert_map, logger):
     """
@@ -19,7 +21,7 @@ def resolve_method_ids(assert_map, logger):
                 logger.warning(f"Could not resolve method id for {method.method_name}: {e}")
 
 
-def run_fuzzing(assert_map, logger):
+def run_fuzzing(assert_map, logger, symbolic_fuzzer=False):
     """
     Run fuzzing for every method that has parameters.
     Collect wrong inputs from the fuzzer and attach them to the Method object.
@@ -34,7 +36,7 @@ def run_fuzzing(assert_map, logger):
                 continue
 
             try:
-                fuzzer = Fuzzer(method.method_id)
+                fuzzer = Fuzzer(method.method_id, symbolic_corpus=symbolic_fuzzer)
                 fuzzer.fuzz()
 
                 for wrong_inputs_set in fuzzer.wrong_inputs:
@@ -54,16 +56,27 @@ def run():
 
     # ASSERT CLASSIFICATION
     # (Z3 Solver + Param Generation Fuzzer + Interpreter)
-    assert_map = classifier.run(assert_map)
+    assert_map, time_measurements_classification = classifier.run(assert_map)
 
     # COVERAGE BASED FUZZING
-    # TODO: integrate Symbolic Execution
-    run_fuzzing(assert_map, logger)
+    symbolic_exec_enable = True
+    start_time_fuzzing = time.time()
+    run_fuzzing(assert_map, logger, symbolic_fuzzer=symbolic_exec_enable)
+    end_time_fuzzing = time.time()
+
+    time_measurements_fuzzing = end_time_fuzzing - start_time_fuzzing
 
     # CODE REWRITING
     # (Comments + Suggestions)
+    start_time_rewriting = time.time()
     code_rewriter.run(assert_map)
+    end_time_rewriting = time.time()
 
+    time_measurements_rewriting = end_time_rewriting - start_time_rewriting
+
+    print("Execution times:")
+    print(f"Classification syntatic: {time_measurements_classification["static"]}\nClassification dynamic: {time_measurements_classification["dynamic"]}")
+    print(f"Rewriting that uses fuzzing: {time_measurements_fuzzing + time_measurements_rewriting}")
 
 if __name__ == "__main__":
     run()

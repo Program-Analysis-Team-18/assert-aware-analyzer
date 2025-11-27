@@ -3,6 +3,8 @@ import z3
 from core import Map, Classification
 from solver import AssertSolver, GenerationInvoker, SolveResult
 
+import time
+
 
 def classify_base(result: SolveResult) -> Classification:
     """
@@ -58,6 +60,10 @@ def classify_advanced(result: SolveResult, method_id: str, params_order: list[st
 
 def run(assert_map: Map) -> Map:
     """Classify all assertions not classified from Syntactic Analysis."""
+
+    Time_measurements_basic_classification = []
+    Time_measurements_advanced_classification = []
+
     for c in assert_map.classes:
         # print(f"====== CLASS: {c.class_name} ======")
         for m in c.methods:
@@ -67,11 +73,15 @@ def run(assert_map: Map) -> Map:
 
                 classification = a.classification
                 if classification == 'unclassified':
+
+                    start_time_basic = time.time()
                     # base classification
                     solver = AssertSolver([a.assertion_node])
                     result = solver.solve()
                     classification = classify_base(result)
+                    end_time_basic = time.time()
 
+                    start_time_advanced = time.time()
                     # advanced classification
                     if classification == 'contingent':
                         # find method id from methods.txt using method name
@@ -84,7 +94,16 @@ def run(assert_map: Map) -> Map:
                                 break
                             solver = AssertSolver([a.assertion_node])
                             result = solver.solve(attempts=i)
+                    end_time_advanced = time.time()
+
+                    Time_measurements_basic_classification.append(end_time_basic-start_time_basic)
+                    Time_measurements_advanced_classification.append(end_time_advanced-start_time_advanced)
                             
                 a.classification = classification
 
-    return assert_map
+    Time_basic_classification_avg = sum(Time_measurements_basic_classification)/len(Time_measurements_basic_classification)
+    Time_adv_classification_avg = sum(Time_measurements_advanced_classification)/len(Time_measurements_advanced_classification)
+
+    Time_measurements = {"static": Time_basic_classification_avg, "dynamic": Time_adv_classification_avg}
+
+    return assert_map, Time_measurements
