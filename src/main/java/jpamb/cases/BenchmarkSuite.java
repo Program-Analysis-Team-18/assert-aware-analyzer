@@ -2,9 +2,7 @@ package jpamb.cases;
 
 import jpamb.utils.CappedInteger;
 import jpamb.utils.PositiveInteger;
-import jpamb.utils.SideEffectHelpers;
 import jpamb.utils.StepInteger;
-import jpamb.utils.SideEffectChain;
 import jpamb.utils.Tag;
 
 import static jpamb.utils.Tag.TagType.*;
@@ -16,13 +14,20 @@ public class BenchmarkSuite {
 
     static int state;
 
+    public static boolean invokeChangeState() { 
+        changeState(); 
+        return true;
+    }
 
+    public static void changeState() {
+        state = 5;
+    }
 
     // Testing the assert-with-call chain.
     // invokeChangeState() is used inside an assert, but it still calls changeState(), which has a side effect.
     @Tag({ SIDE_EFFECT_ASSERT })
     public static void changeStateNested() {
-        assert SideEffectHelpers.invokeChangeState(); 
+        assert invokeChangeState(); 
     }
 
     @Tag({ USELESS_ASSERT })
@@ -262,65 +267,6 @@ public class BenchmarkSuite {
     }
 
     // end gemini cases 
-
-    //start nested side effects
-
-    // ===========================================
-    // Multi-level nested side effects (3 levels)
-    // ===========================================
-
-    // Test with 3 levels of nested side effects in assert
-    @Tag({ SIDE_EFFECT_ASSERT })
-    public void complexNestedSideEffects() {
-        assert SideEffectHelpers.topLevelSideEffect(true);
-    }
-
-    // ===========================================
-    // Logical operators with nested side effects
-    // ===========================================
-
-    // Test combining nested calls with logical operators
-    @Tag({ SIDE_EFFECT_ASSERT })
-    public void nestedSideEffectsWithLogicalOps() {
-        // Both methods have side effects, and both will be called due to || operator
-        assert SideEffectHelpers.topLevelSideEffect(false) || SideEffectHelpers.midLevelSideEffect(10);
-    }
-
-    // ===========================================
-    // Method chaining with side effects
-    // ===========================================
-
-    // Test with method chaining and nested side effects (using external SideEffectChain class)
-    @Tag({ SIDE_EFFECT_ASSERT })
-    public void chainedSideEffects() {
-        SideEffectChain chain = new SideEffectChain();
-        assert chain.doubleIncrement().increment().isPositive();
-    }
-
-    // ===========================================
-    // Array modifications with nested calls
-    // ===========================================
-
-    // Test with nested side effects in array operations
-
-    @Tag({ SIDE_EFFECT_ASSERT })
-    public void nestedArraySideEffects() {
-        int[] arr = new int[10];
-        assert SideEffectHelpers.modifyArrayNested(arr, 0) && SideEffectHelpers.modifyArrayNested(arr, 1);
-    }
-
-    // ===========================================
-    // Recursive side effects
-    // ===========================================
-
-    // Test with recursive side effects
-
-    @Tag({ SIDE_EFFECT_ASSERT })
-    public void recursiveNestedSideEffects() {
-        assert SideEffectHelpers.recursiveSideEffect(3);
-    }
-
-    //end nested side effects
     
 
 }

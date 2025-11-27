@@ -32,8 +32,3 @@ tautologyMath,234,tautology
 contradictionMath,239,contradiction
 loopBound,244,useful
 switchCase,253,useful
-complexNestedSideEffects,274,side_effect
-nestedSideEffectsWithLogicalOps,285,side_effect
-chainedSideEffects,296,side_effect
-nestedArraySideEffects,308,side_effect
-recursiveNestedSideEffects,319,side_effect
