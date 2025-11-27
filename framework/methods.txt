@@ -11,5 +11,5 @@ jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/utils/PositiveInteger<init>I;Ljpa
 jpamb.cases.BenchmarkSuite.extractBlock:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;Ljpamb/utils/CappedInteger<init>II;)V
 jpamb.cases.BenchmarkSuite.extractPacketWindow:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;)V
 jpamb.cases.BenchmarkSuite.invokeChangeState:()V
-jpamb.cases.BenchmarkSuite.incr(I)I
-jpamb.cases.BenchmarkSuite.misc(III)I
+jpamb.cases.BenchmarkSuite.incr:(I)I
+jpamb.cases.BenchmarkSuite.misc:(III)I

@@ -912,7 +912,13 @@ def interpret(method, inputs, verbose=False, corpus=False, assertions_disabled=F
 
     if corpus:
         analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(inputs)]
-        return generate_corpus(analyse(PC(parse_methodid(method), 0), analyse_method_input, 50), inputs)
+        try:
+            new_corpus = generate_corpus(analyse(PC(parse_methodid(method), 0), analyse_method_input, 50), inputs)
+        except ValueError as e:
+            # print("Error occured when generating a new corpus")
+            raise ValueError(f"Corpus generation error: {e} occured when generating a new corpus")
+
+        return new_corpus
     else:
         bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
 

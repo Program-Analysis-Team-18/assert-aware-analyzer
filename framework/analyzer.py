@@ -2,7 +2,8 @@ import syntaxer
 import classifier
 import code_rewriter
 import utils
-from fuzzer import Fuzzer
+#from fuzzer import Fuzzer
+from fuzzer_merged import Fuzzer
 
 import time
 
@@ -76,7 +77,8 @@ def run():
 
     print("Execution times:")
     print(f"Classification syntatic: {time_measurements_classification["static"]}\nClassification dynamic: {time_measurements_classification["dynamic"]}")
-    print(f"Rewriting that uses fuzzing: {time_measurements_fuzzing + time_measurements_rewriting}")
+    print(f"Rewriting: {time_measurements_rewriting}")
+    print(f"Fuzzing: {time_measurements_fuzzing}")
 
 if __name__ == "__main__":
     run()

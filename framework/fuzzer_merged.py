@@ -12,20 +12,32 @@ class CustomType:
         self.init_params = params
 
 
-class Fuzzer:
-    """
+"""
     A fuzzer that generates random or coverage-guided inputs for the JPAMB methods.
 
     Usage: f = Fuzzer("jpamb.cases.Arrays.arraySpellsHello:([C)V", None, True)
            f.fuzz()
-    """
-    def __init__(self, method: str, corpus: List = None, coveraged_based: bool = True, fuzz_for: int = 10_000):
-        self.method = method
-        self.coverage_based = coveraged_based
-        self.method_params = self.parse_parameters(method)
-        self.corpus = {0: self.random_input() if corpus is None else corpus}
-        self.fuzz_for = fuzz_for
-        self.wrong_inputs: List[List[WrongInput]] = []
+"""
+class Fuzzer:
+    def __init__(self, method: str, corpus: List = None, symbolic_corpus=False, coveraged_based: bool = True, fuzz_for: int = 10_000):
+        try:
+            self.method = method
+            self.coverage_based = coveraged_based
+            self.method_params = self.parse_parameters(method)
+            if symbolic_corpus:
+                    self.corpus = {0: input for input in interpret(method, "".join(self.method_params), corpus=True)}
+            else:
+                self.corpus = {0: self.random_input() if corpus is None else corpus}
+
+            # print(f"CORPUS: \n{self.corpus}")
+
+            self.fuzz_for = fuzz_for
+            self.wrong_inputs: List[List[WrongInput]] = []
+            self.error_map = {}
+        except ValueError as e:
+            print(f"Fuzzer error: {e}")
+            return ValueError(f"Fuzzer error: {e}")
+
 
     # Parses JVM descriptors between ( and ) into a list like ["I", "[C"].
     def parse_parameters(self, method: str):
@@ -320,7 +332,7 @@ class Fuzzer:
         identifies inputs that crash without being guarded by assertions.
         """
         for _ in range(self.fuzz_for):
-            print("FUZZ FOR: ", _)
+            # print("FUZZ FOR: ", _)
             seed = deepcopy(random.choice(list(self.corpus.values())))
             candidate = self.mutate(seed)
 
@@ -336,3 +348,37 @@ class Fuzzer:
                     break
             elif self._is_smaller(candidate, self.corpus[depth]):
                 self.corpus[depth] = candidate
+
+    def fuzz_print(self):
+        if self.coverage_based:
+            for _ in range(self.fuzz_for):
+                input = self.mutate(deepcopy(random.choice(list(self.corpus.values()))))
+                output = interpret(self.method, self.format_input(input), False)
+                if output.depth not in self.corpus:
+                    print(f"New input: {input} with depth: {output.depth}")
+                    print(f"{input} -> {output.message}")
+                    self.corpus[output.depth] = input
+                    if output.message != "ok":
+                        self.error_map[output.message] = input
+                elif self.serialized_size_in_bytes(input) < self.serialized_size_in_bytes(self.corpus[output.depth]):
+                    print(f"Smaller input: {input} for depth {output.depth} --> {output.message}")
+                    self.corpus[output.depth] = input
+        else:
+            for _ in range(self.fuzz_for):
+                input = self.random_input()
+                output = interpret(method_id, self.format_input(input), False)
+                if(output.message != "ok"):
+                    self.error_map[output.depth] = input
+                    print(f"{input} --> {output.message}:{output.depth}")
+        print(self.error_map)
+
+# method_id = "jpamb.cases.Tricky.crashy:(III[C)V"
+# method_id = "jpamb.cases.SymbExecTest.misc:(III)I"
+# method_id = "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V"
+# method_id = "jpamb.cases.Arrays.arraySpellsHello:([C)V"
+# method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
+# method_id = "jpamb.cases.Tricky.PositiveIntegers:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V"
+# method_id = "jpamb.cases.BenchmarkSuite.incr:(I)I"
+# method_id = "jpamb.cases.BenchmarkSuite.divideByN:(II)V"
+# fuzzer = Fuzzer(method_id, fuzz_for=10000, symbolic_corpus=True)
+# fuzzer.fuzz()
