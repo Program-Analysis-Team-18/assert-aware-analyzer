@@ -25,8 +25,3 @@ jpamb.cases.BenchmarkSuite.tautologyMath:(Ljpamb/cases/PositiveInteger<init>I;)V
 jpamb.cases.BenchmarkSuite.contradictionMath:(Ljpamb/cases/PositiveInteger<init>I;)V
 jpamb.cases.BenchmarkSuite.loopBound:(Ljpamb/cases/PositiveInteger<init>I;)V
 jpamb.cases.BenchmarkSuite.switchCase:(Ljpamb/cases/PositiveInteger<init>I;)V
-jpamb.cases.BenchmarkSuite.complexNestedSideEffects:()V
-jpamb.cases.BenchmarkSuite.nestedSideEffectsWithLogicalOps:()V
-jpamb.cases.BenchmarkSuite.chainedSideEffects:()V
-jpamb.cases.BenchmarkSuite.nestedArraySideEffects:()V
-jpamb.cases.BenchmarkSuite.recursiveNestedSideEffects:()V
