@@ -4,7 +4,7 @@ import code_rewriter
 import utils
 #from fuzzer import Fuzzer
 import fuzzer_merged as fm
-import fuzzer as f
+import fuzzer_marco as f
 
 import time
 
