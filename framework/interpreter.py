@@ -853,24 +853,28 @@ def generate_initial_state(method_id: jvm.AbsMethodID, method_input: Input, meth
             input_types_combined = "".join(push_values_types)
             constructor_method_id_str = class_name_str + ".<init>:(" + input_types_combined + ")V"        #for now, we assume that all constructors will return void
             constructor_method_id = jvm.AbsMethodID.decode(constructor_method_id_str)
-            state = _invoke_special_method(constructor_method_id,False, state, current_frame)
+            state = _invoke_special_method(constructor_method_id, False, state, current_frame)
 
-            #---execute the constructor
-            constructor_frame = state.frames.peek()
-            for x in range(100000):
-                peek_frame = state.frames.peek()
-                look_for_return = re.match(r"return:V", str(bytecode[peek_frame.pc]))
-                if look_for_return and constructor_frame == peek_frame:
-                    break
+            target_depth = len(state.frames.items)
+
+            for x in range(100_000):
                 state = step(state, bytecode, assertions_disabled)
+
+                if isinstance(state, InterpretationResult):
+                    break
+                
+                if len(state.frames.items) < target_depth:
+                    break
 
             #--- so now we skip the interpreter at all, and "force" the initial frame - since the constructor was already checked
             #----simply instate the initial frame again - with out heap
             initial_frame = Frame.from_method(method_id)
             for index_in_locals_list, local in enumerate(locals_for_new_frame):
+                # print("LOCAL: ", local)
                 initial_frame.locals[index_in_locals_list] = local
 
             state = State(heap, Stack.empty().push(initial_frame))
+            # print("STATE: ", state)
 
         else:
             local = wrap_value(value.value)
@@ -915,7 +919,7 @@ def interpret(method, inputs, verbose=False, assertions_disabled=False) -> Inter
     except Exception as e:
         return InterpretationResult("generic error", 0)
 
-    for _ in range(100000):
+    for _ in range(10_000):
         try:
             state = step(state, bc, assertions_disabled)
         except Exception as e:
@@ -935,7 +939,7 @@ if __name__ == "__main__":
     mininput_str = sys.argv[2]
     state = generate_initial_state(mid, minput,mininput_str,bc)
 
-    for _ in range(100000):
+    for _ in range(100_000):
         state = step(state, bc)
         if isinstance(state, InterpretationResult):
             print(f"{state.message}:{state.depth}")

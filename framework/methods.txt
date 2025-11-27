@@ -2,9 +2,11 @@ jpamb.cases.BenchmarkSuite.changeStateNested:()V
 jpamb.cases.BenchmarkSuite.assertLiteralTrue:()V
 jpamb.cases.BenchmarkSuite.assertWithIncrement:()V
 jpamb.cases.BenchmarkSuite.assertArrayWrite:()V
-jpamb.cases.BenchmarkSuite.withdraw:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;I)V
-jpamb.cases.BenchmarkSuite.normalizeEdgeWeight:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/CappedInteger<init>II;Ljpamb/cases/CappedInteger<init>II;)V
-jpamb.cases.BenchmarkSuite.calculateInterest:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V
-jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;I)V
-jpamb.cases.BenchmarkSuite.extractBlock:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/CappedInteger<init>II;Ljpamb/cases/CappedInteger<init>II;)V
-jpamb.cases.BenchmarkSuite.extractPacketWindow:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/CappedInteger<init>II;)V
+jpamb.cases.BenchmarkSuite.divideByN:(II)V
+jpamb.cases.BenchmarkSuite.divideByNMinus10:(III)V
+jpamb.cases.BenchmarkSuite.withdraw:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V
+jpamb.cases.BenchmarkSuite.normalizeEdgeWeight:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;Ljpamb/utils/CappedInteger<init>II;)V
+jpamb.cases.BenchmarkSuite.calculateInterest:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;)V
+jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V
+jpamb.cases.BenchmarkSuite.extractBlock:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;Ljpamb/utils/CappedInteger<init>II;)V
+jpamb.cases.BenchmarkSuite.extractPacketWindow:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;)V
