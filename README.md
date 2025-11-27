@@ -411,23 +411,15 @@ It essentially skips the run made my jpamb build and manually runs maven to comp
 
 The following are a few examples of using our interpreter with method that takes objects as an input parameters:
 
-```shell
-$ uv run framework/interpreter.py "jpamb.cases.CustomClasses.TwoObjectsInput:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V" "(new jpamb/cases/PositiveInteger(20), new jpamb/cases/PositiveInteger(25))"
-```
 
-With input as object which constructor requires two parameters:
 ```shell
-$ uv run framework/interpreter.py "jpamb.cases.CustomClasses.TwoInputsToConstructor:(Ljpamb/cases/PositiveInteger2Params<init>II;)V" "(new jpamb/cases/PositiveInteger2Params(20, 50))"
+uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V" "(new jpamb/cases/PositiveInteger(2),new jpamb/cases/PositiveInteger(3),5)"
 ```
 
 ```shell
-$ uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;I)V" "(new jpamb/cases/PositiveInteger(2),new jpamb/cases/PositiveInteger(3),5)"
+uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.extractBlock:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;Ljpamb/utils/CappedInteger<init>II;)V" "(new jpamb/cases/PositiveInteger(20), new jpamb/cases/CappedInteger(4,4), new jpamb/cases/CappedInteger(5,5))"
 ```
 
 ```shell
-$ uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.extractBlock:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/CappedInteger<init>II;Ljpamb/cases/CappedInteger<init>II;)V" "(new jpamb/cases/PositiveInteger(20), new jpamb/cases/CappedInteger(4,4), new jpamb/cases/CappedInteger(5,5))"
-```
-
-```shell
-$ uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.extractPacketWindow:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/CappedInteger<init>II;)V" "(new jpamb/cases/PositiveInteger(20), new jpamb/cases/CappedInteger(4,10))"
+uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.extractPacketWindow:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;)V" "(new jpamb/cases/PositiveInteger(20), new jpamb/cases/CappedInteger(4,10))"
 ```

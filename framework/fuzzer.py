@@ -3,6 +3,7 @@ import string
 from copy import deepcopy
 from typing import List
 from interpreter import interpret
+from core import WrongInput
 
 
 class CustomType:
@@ -27,6 +28,7 @@ class Fuzzer:
         else:
             self.corpus = {0: self.random_input() if corpus is None else corpus}
         self.fuzz_for = fuzz_for
+        self.wrong_inputs: List[List[WrongInput]] = []
         self.error_map = {}
 
 
@@ -66,7 +68,7 @@ class Fuzzer:
     def random_value(self, t: str):
         match t:
             case "I":
-                return random.randint(-10000, 10000)
+                return random.randint(-1000, 1000)
             case "S":
                 return random.randint(-1000, 1000)
             case "J":
@@ -80,7 +82,7 @@ class Fuzzer:
             case "F":
                 return round(random.uniform(-1000, 1000), 3)
             case "D":
-                return round(random.uniform(-10000, 10000), 3)
+                return round(random.uniform(-1000, 1000), 3)
         return None
 
     # Creates a random argument list for the method, including random arrays.
@@ -156,7 +158,7 @@ class Fuzzer:
                     c = random.choice(safe_chars)
                 return c
             else:
-                interesting_substitutions = [-1, 0, 1, 255, 256, 1024, -128, 32767, -32768]
+                interesting_substitutions = [-1, 0, 1, 128, -128]
                 ops = [
                     lambda v: v ^ (1 << random.randint(0, 7)) if isinstance(v, int) else v * v,
                     lambda v: v + random.randint(-10, 10),
@@ -189,7 +191,7 @@ class Fuzzer:
                 return x ^ (1 << random.randint(0, 7))
             else:
                 ops = [
-                    lambda v: v + random.randint(-1000, 1000),
+                    lambda v: v + random.randint(-100, 100),
                     lambda v: v * 2,
                     lambda v: v // 2 if v else v
                 ]
@@ -240,11 +242,107 @@ class Fuzzer:
             return len(x.encode("utf8"))
 
         return 0
+    
+    def _is_smaller(self, a, b):
+        return self.serialized_size_in_bytes(a) < self.serialized_size_in_bytes(b)
 
-    # Runs the fuzzing loop:
-    # if coverage_based -> mutate corpus → track new coverage depth
-    # else random -> generate new random inputs
-    def fuzz(self):
+    
+    def _is_faulty(self, altered_output):
+        if altered_output is None:
+            return False
+        return altered_output.message == "ok"
+
+    
+    def _search_argument_mutation(self, original_input, idx, depth, min_depth):
+        for _ in range(self.fuzz_for):
+            candidate = deepcopy(original_input)
+            mutant_source = deepcopy(random.choice(list(self.corpus.values())))
+            mutated = self.mutate(mutant_source)[idx]
+
+            if mutated == original_input[idx]:
+                continue
+
+            candidate[idx] = mutated
+            out = self._run(candidate, assertions_disabled=False)
+
+            if out.depth >= min_depth and out.message not in("assertion error", "timeout"):
+                return out
+        return None
+
+
+    def _find_faulty_arguments(self, input, depth, min_depth) -> List[WrongInput]:
+        result = []
+        for i in range(len(input)):
+            mutated_val = self._search_argument_mutation(input, i, depth, min_depth)
+            faulty = self._is_faulty(mutated_val)
+            is_obj = isinstance(input[i], list)
+            result.append(WrongInput(
+                value=input[i][1] if is_obj else input[i],
+                faulty=faulty,
+                is_obj=is_obj
+            ))
+        return result
+
+    
+    def _crash_is_unprotected(self, input, depth):
+        check = self._run(input, assertions_disabled=False)
+        return check.depth == depth
+
+    
+    def _handle_new_coverage(self, input, output, depth, min_depth):
+        self.corpus[depth] = input
+
+        if output.message not in("ok", "assertion error", "timeout"):
+            return
+
+        if depth < min_depth:
+            return
+
+        # If enabling assertions gives same depth, crash is real, not blocked
+        if not self._crash_is_unprotected(input, depth):
+            return
+
+        # Find faulty inputs
+        # print("FIND FAULTY WITH THIS OUTPUT: ", output.message)
+        wrong_inputs = self._find_faulty_arguments(input, depth, min_depth)
+        
+        self.wrong_inputs.append(wrong_inputs)
+
+
+    def _run(self, input, assertions_disabled):
+        return interpret(
+            method=self.method,
+            inputs=self.format_input(input),
+            verbose=False,
+            assertions_disabled=assertions_disabled,
+        )
+
+    
+    def fuzz(self, min_depth=1, max_errors=1, assertion_disabled=False):
+        """
+        Coverage-based (concolic-style) fuzzing.
+        Randomly mutates inputs from the corpus, tracks coverage depth, and
+        identifies inputs that crash without being guarded by assertions.
+        """
+        for _ in range(self.fuzz_for):
+            # print("FUZZ FOR: ", _)
+            seed = deepcopy(random.choice(list(self.corpus.values())))
+            candidate = self.mutate(seed)
+
+            # print("CANDIDATE: ", candidate)
+            output = self._run(candidate, assertions_disabled=assertion_disabled)
+            if output.message == "assertion error" or output.message == "*":
+                continue
+            depth = output.depth
+
+            if depth not in self.corpus:
+                self._handle_new_coverage(candidate, output, depth, min_depth)
+                if len(self.wrong_inputs) >= max_errors:
+                    break
+            elif self._is_smaller(candidate, self.corpus[depth]):
+                self.corpus[depth] = candidate
+
+    def fuzz_print(self):
         if self.coverage_based:
             for _ in range(self.fuzz_for):
                 input = self.mutate(deepcopy(random.choice(list(self.corpus.values()))))
@@ -266,7 +364,6 @@ class Fuzzer:
                     self.error_map[output.depth] = input
                     print(f"{input} --> {output.message}:{output.depth}")
         print(self.error_map)
-
 
 # method_id = "jpamb.cases.Tricky.crashy:(III[C)V"
 # method_id = "jpamb.cases.SymbExecTest.misc:(III)I"
