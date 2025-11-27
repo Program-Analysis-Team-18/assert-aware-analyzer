@@ -80,7 +80,7 @@ def run():
     print("Execution times:")
     print(f"Classification syntatic: {time_measurements_classification["static"]}\nClassification dynamic: {time_measurements_classification["dynamic"]}")
     print(f"Rewriting: {time_measurements_rewriting}")
-    print(f"Fuzzing: {time_measurements_fuzzing}")
+    print(f"Fuzzing: {time_measurements_fuzzing} -------- Symbolic execution enabled: {symbolic_exec_enable}")
 
 if __name__ == "__main__":
     run()
