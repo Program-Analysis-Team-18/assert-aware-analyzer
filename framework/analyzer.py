@@ -3,7 +3,8 @@ import classifier
 import code_rewriter
 import utils
 #from fuzzer import Fuzzer
-from fuzzer_merged import Fuzzer
+import fuzzer_merged as fm
+import fuzzer as f
 
 import time
 
@@ -37,7 +38,8 @@ def run_fuzzing(assert_map, logger, symbolic_fuzzer=False):
                 continue
 
             try:
-                fuzzer = Fuzzer(method.method_id, symbolic_corpus=symbolic_fuzzer)
+                fuzzer = fm.Fuzzer(method.method_id, symbolic_corpus=symbolic_fuzzer)
+                # fuzzer = f.Fuzzer(method.method_id)
                 fuzzer.fuzz()
 
                 for wrong_inputs_set in fuzzer.wrong_inputs:

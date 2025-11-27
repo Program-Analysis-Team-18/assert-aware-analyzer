@@ -262,6 +262,7 @@ class Fuzzer:
     
     def _search_argument_mutation(self, original_input, idx, depth, min_depth):
         for _ in range(self.fuzz_for):
+            # print(f"---FUZZ FOR 2: {self.fuzz_for}---------")
             candidate = deepcopy(original_input)
             mutant_source = deepcopy(random.choice(list(self.corpus.values())))
             mutated = self.mutate(mutant_source)[idx]

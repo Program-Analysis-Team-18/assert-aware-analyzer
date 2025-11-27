@@ -933,7 +933,8 @@ def interpret(method, inputs, verbose=False, corpus=False, assertions_disabled=F
         except Exception as e:
             return InterpretationResult("generic error", 0)
 
-        for _ in range(10_000):
+        for i in range(10_000):
+            # print(f"------- step {i} ------------")
             try:
                 state = step(state, bc, assertions_disabled)
             except Exception as e:

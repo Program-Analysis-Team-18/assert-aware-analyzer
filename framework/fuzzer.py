@@ -320,7 +320,7 @@ class Fuzzer:
         identifies inputs that crash without being guarded by assertions.
         """
         for _ in range(self.fuzz_for):
-            print("FUZZ FOR: ", _)
+            # print("FUZZ FOR: ", _)
             seed = deepcopy(random.choice(list(self.corpus.values())))
             candidate = self.mutate(seed)
 
