@@ -26,12 +26,12 @@ def getmethodid(
 def getcasefromparams(mid, i) -> tuple[jvm.AbsMethodID, Input]:
         return parse_methodid(mid), parse_input(i)
 
-def getcase() -> tuple[jvm.AbsMethodID, Input]:
+def getcase(offset=0) -> tuple[jvm.AbsMethodID, Input]:
     """Get the case from the program arguments."""
     import sys
 
-    mid = sys.argv[1]
-    i = sys.argv[2]
+    mid = sys.argv[offset+1]
+    i = sys.argv[offset+2]
 
     return parse_methodid(mid), parse_input(i)
 

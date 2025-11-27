@@ -417,9 +417,9 @@ uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/
 ```
 
 ```shell
-uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.extractBlock:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;Ljpamb/utils/CappedInteger<init>II;)V" "(new jpamb/cases/PositiveInteger(20), new jpamb/cases/CappedInteger(4,4), new jpamb/cases/CappedInteger(5,5))"
+uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.extractBlock:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;Ljpamb/utils/CappedInteger<init>II;)V" "(new jpamb/utils/PositiveInteger(20), new jpamb/utils/CappedInteger(4,4), new jpamb/utils/CappedInteger(5,5))"
 ```
 
 ```shell
-uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.extractPacketWindow:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;)V" "(new jpamb/cases/PositiveInteger(20), new jpamb/cases/CappedInteger(4,10))"
+uv run framework/interpreter.py "jpamb.cases.BenchmarkSuite.extractPacketWindow:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;)V" "(new jpamb/utils/PositiveInteger(20), new jpamb/utils/CappedInteger(4,10))"
 ```
