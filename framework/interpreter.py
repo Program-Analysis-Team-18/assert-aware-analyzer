@@ -16,6 +16,7 @@ from dataclasses import dataclass
 
 from loguru import logger
 
+import ast
 import jpamb
 from jpamb.model import Input
 from jpamb import jvm
@@ -911,9 +912,42 @@ def interpret(method, inputs, verbose=False, corpus=False, assertions_disabled=F
         logger.remove()
 
     if corpus:
-        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(inputs)]
+        parsed_inputs = {}
+        analyse_method_input = []
+
+        if isinstance(inputs, str):
+            parsed_inputs = {
+                v: (
+                    jvm.Char() if isinstance(v, str) and len(v) == 1 else
+                    jvm.Int() if isinstance(v, int) else
+                    jvm.Float() if isinstance(v, float) else
+                    jvm.Bool() if isinstance(v, bool) else
+                    None
+                )
+                for v in ast.literal_eval(inputs)
+            }
+        else:
+            parsed_inputs = [
+                (
+                    jvm.Char() if isinstance(v, str) and len(v) == 1 else
+                    jvm.Int() if isinstance(v, int) else
+                    jvm.Float() if isinstance(v, float) else
+                    jvm.Bool() if isinstance(v, bool) else
+                    None
+                )
+                for v in inputs
+            ]
+        print(parsed_inputs)
+
+        if isinstance(parsed_inputs, dict):
+            analyse_method_input = [(chr(ord('a') + i), t) for i, t in enumerate(parsed_inputs.values())]
+        else:
+            analyse_method_input = [(chr(ord('a') + i), t) for i, t in enumerate(parsed_inputs)]
+
+        print(f"what{analyse_method_input}")
         try:
             new_corpus = generate_corpus(analyse(PC(parse_methodid(method), 0), analyse_method_input, 50), inputs)
+            print(new_corpus)
         except ValueError as e:
             # print("Error occured when generating a new corpus")
             raise ValueError(f"Corpus generation error: {e} occured when generating a new corpus")
@@ -943,31 +977,33 @@ def interpret(method, inputs, verbose=False, corpus=False, assertions_disabled=F
                 return state
         else:
             return InterpretationResult("timeout", state.frames.peek().pc.offset)
+method_id = "jpamb.cases.BenchmarkSuite.divideByN:(II)V"
+interpret(method_id,"(1,2)", corpus=True)
+# if __name__ == "__main__":
 
+    # configure_logger()
+    # if "--analyse" in sys.argv:
+    #     method = sys.argv[1]
+    #     params = method[method.index('(') + 1:method.index(')')]
+    #
+    #     analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
+    #
+    #     result = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
+    #     for branch in result:
+    #         # if "UNSAT" in branch:
+    #         print(branch)
+    # else:
+    #     bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
+    #
+    #     mid, minput = jpamb.getcase()
+    #     mininput_str = sys.argv[2]
+    #     state = generate_initial_state(mid, minput,mininput_str,bc)
+    #
+    #     for _ in range(100_000):
+    #         state = step(state, bc)
+    #         if isinstance(state, InterpretationResult):
+    #             print(f"{state.message}:{state.depth}")
+    #             break
+    #     else:
+    #         print("*")
 
-if __name__ == "__main__":
-    configure_logger()
-    if "--analyse" in sys.argv:
-        method = sys.argv[1]
-        params = method[method.index('(') + 1:method.index(')')]
-
-        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
-
-        result = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
-        for branch in result:
-            # if "UNSAT" in branch:
-            print(branch)
-    else:
-        bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
-
-        mid, minput = jpamb.getcase()
-        mininput_str = sys.argv[2]
-        state = generate_initial_state(mid, minput,mininput_str,bc)
-
-        for _ in range(100_000):
-            state = step(state, bc)
-            if isinstance(state, InterpretationResult):
-                print(f"{state.message}:{state.depth}")
-                break
-        else:
-            print("*")

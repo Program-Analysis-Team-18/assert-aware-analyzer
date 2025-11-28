@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import jpamb
 from jpamb import jvm
 from dataclasses import dataclass
@@ -71,7 +73,7 @@ class Stack[T]:
         return "".join(f"{v}" for v in self.items)
 
 
-suite = jpamb.Suite()
+suite = jpamb.Suite(Path(__file__).parent.joinpath("../"))
 bc = Bytecode(suite, dict())
 
 
@@ -503,5 +505,5 @@ if __name__ == "__main__":
     methodid, input = jpamb.getcase()
     inputs = [("x", jvm.Int())]  # Adjust based on actual inputs
     max_depth = 150
-    
+
     print(analyse(PC(methodid, 0), inputs, max_depth))

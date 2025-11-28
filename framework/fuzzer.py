@@ -380,6 +380,7 @@ class Fuzzer:
 # method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
 # method_id = "jpamb.cases.Tricky.PositiveIntegers:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V"
 # method_id = "jpamb.cases.BenchmarkSuite.incr:(I)I"
-# method_id = "jpamb.cases.BenchmarkSuite.divideByN:(II)V"
-# fuzzer = Fuzzer(method_id, fuzz_for=10000, symbolic_corpus=True)
-# fuzzer.fuzz()
+method_id = "jpamb.cases.BenchmarkSuite.divideByN:(II)V"
+fuzzer = Fuzzer(method_id, fuzz_for=1000, symbolic_corpus=False)
+fuzzer.fuzz()
+print(fuzzer.wrong_inputs)

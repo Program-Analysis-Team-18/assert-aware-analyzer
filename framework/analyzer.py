@@ -36,7 +36,7 @@ def run_fuzzing(assert_map, logger, symbolic_fuzzer=False):
                 continue
 
             try:
-                fuzzer = Fuzzer(method.method_id, symbolic_corpus=symbolic_fuzzer)
+                fuzzer = Fuzzer(method.method_id, symbolic_corpus=False)
                 # fuzzer = f.Fuzzer(method.method_id)
                 fuzzer.fuzz()
 
