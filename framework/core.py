@@ -142,6 +142,11 @@ class Map:
     def __init__(self):
         self.classes = []
 
+    def from_list(_classes: List[Classes]):
+        instance = Map()
+        instance.classes = _classes
+        return instance
+
     def append(self, cls: Classes):
         self.classes.append(cls)
 

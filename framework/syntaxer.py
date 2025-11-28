@@ -3,11 +3,9 @@ import logging
 import tree_sitter
 import tree_sitter_java
 from tree_sitter import Tree, Query, QueryCursor, Node
-import jpamb
-import sys
-from jpamb import model
 from pathlib import Path
 from typing import List
+from utils import get_dir_from_root
 
 from core import Parameter, Assertion, Method, Classes, Map, Classification
 
@@ -413,15 +411,13 @@ def from_class_get_method_nodes(cls: Classes):
         cls.add_method(get_method_data(method_name, method_node, file_data))
 
 def parse_classes(assertion_map: Map):
-    root = "src/main/java/jpamb/"
-    java_files = list(Path(root).rglob("*.java"))
+    java_files = list(Path(get_dir_from_root("/src/main/java/jpamb/")).rglob("*.java"))
 
     for class_file in java_files:
         # changed to use the safer .stem for file names
         class_name:str = Path(class_file.name).stem
         assertion_map.add_class(class_name, class_file)
         from_class_get_method_nodes(assertion_map.return_class(class_name))
-        pass
 
 def setup():
     global JAVA_LANGUAGE
@@ -449,9 +445,11 @@ def run() -> Map:
     start_syntactic_analysis(assertion_mapping)
     # assertion_mapping.print_mapping()
 
-    mapping_output = Map()
-    mapping_output.append(assertion_mapping.return_class("BenchmarkSuite"))
-    return mapping_output
+    java_files = [
+        p.stem
+        for p in Path(get_dir_from_root("/src/main/java/jpamb/cases/")).rglob("*.java")
+    ]
+    return Map.from_list([cls for cls in assertion_mapping.classes if cls.class_name in java_files])
 
 if __name__ == "__main__":
     setup()

@@ -24,3 +24,9 @@ def configure_logger():
     logger.remove()
     logger.add(sys.stderr, format="[{level}] {message}")
     return logger
+
+def get_dir_from_root(dir: str):
+    if not dir.startswith("/"):
+        dir = "/" + dir
+    dir = dir.lstrip('/')
+    return str(Path(__file__).resolve().parent.parent.joinpath(dir))

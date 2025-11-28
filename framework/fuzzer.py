@@ -1,5 +1,9 @@
+import concurrent
 import random
 import string
+import threading
+import multiprocessing as mp
+import time
 from copy import deepcopy
 from typing import List
 from interpreter import interpret
@@ -30,6 +34,8 @@ class Fuzzer:
         self.fuzz_for = fuzz_for
         self.wrong_inputs: List[List[WrongInput]] = []
         self.error_map = {}
+        self.corpus_lock = threading.Lock()
+        self.wrong_inputs_lock = threading.Lock()
 
 
     # Parses JVM descriptors between ( and ) into a list like ["I", "[C"].
@@ -208,7 +214,8 @@ class Fuzzer:
                         input[i][j] = mutation(input[i][j])
                     input[i].insert(0, custom_type)
                 else:
-                    input[i] = mutation(input[i])
+                    if random.choice([True,False]):
+                        input[i] = mutation(input[i])
             return input
         else:
             return mutation(input)
@@ -263,7 +270,7 @@ class Fuzzer:
                 continue
 
             candidate[idx] = mutated
-            out = self._run(candidate, assertions_disabled=False)
+            out = self._run(candidate, assertions_disabled=True)
 
             if out.depth >= min_depth and out.message not in("assertion error", "timeout"):
                 return out
@@ -292,7 +299,7 @@ class Fuzzer:
     def _handle_new_coverage(self, input, output, depth, min_depth):
         self.corpus[depth] = input
 
-        if output.message not in("ok", "assertion error", "timeout"):
+        if output.message not in("ok", "assertion error", "timeout", "generic_error"):
             return
 
         if depth < min_depth:
@@ -305,7 +312,7 @@ class Fuzzer:
         # Find faulty inputs
         # print("FIND FAULTY WITH THIS OUTPUT: ", output.message)
         wrong_inputs = self._find_faulty_arguments(input, depth, min_depth)
-        
+
         self.wrong_inputs.append(wrong_inputs)
 
 
@@ -317,30 +324,107 @@ class Fuzzer:
             assertions_disabled=assertions_disabled,
         )
 
-    
-    def fuzz(self, min_depth=1, max_errors=1, assertion_disabled=False):
+    def fuzz_(self, max_errors, min_depth, assertions_disabled, fuzz_for, thread_no):
+        for _ in range(fuzz_for):
+            with self.corpus_lock:
+                seed = deepcopy(random.choice(list(self.corpus.values())))
+
+            candidate = self.mutate(seed)
+            output = interpret("jpamb.cases.BenchmarkSuite.plm:(III)I", "(1,10,0)")
+            print(output.message)
+            if output.message in ("assertion error", "*", "ok"):
+                continue
+            print(output.message)
+
+            if output.depth not in self.corpus:
+                with self.corpus_lock:
+                    print(f"{thread_no}: new {candidate} -> {output.message} {output.depth}")
+                    self.corpus[output.depth] = candidate
+            else:
+                with self.corpus_lock:
+                    if self.serialized_size_in_bytes(candidate) < self.serialized_size_in_bytes(self.corpus[output.depth]):
+                        print(f"{thread_no}: Smaller input: {candidate} for depth {output.depth} --> {output.message}")
+                    self.corpus[output.depth] = candidate
+            with self.wrong_inputs_lock:
+                if len(self.error_map) >= max_errors:
+                    print(self.error_map)
+                    return
+
+    def fuzz_parallel(self, num_threads=5):
+        processes = []
+        manager = mp.Manager()
+        thread_results = manager.list()
+
+        def worker_chunk(iterations, initial_corpus, result_list):
+            thread_now = time.time()
+            local_corpus = deepcopy(initial_corpus)
+            local_error_map = {}
+
+            for _ in range(iterations):
+                input_val = self.mutate(deepcopy(random.choice(list(local_corpus.values()))))
+                output = interpret(self.method, self.format_input(input_val), False)
+
+                if output.depth not in local_corpus:
+                    print(f"New input: {input_val} with depth: {output.depth}")
+                    print(f"{input_val} -> {output.message}")
+                    local_corpus[output.depth] = input_val
+
+                    if output.message != "ok":
+                        local_error_map[output.message] = input_val
+                else:
+                    if self.serialized_size_in_bytes(input_val) < self.serialized_size_in_bytes(
+                            local_corpus[output.depth]):
+                        print(f"Smaller input: {input_val} for depth {output.depth} --> {output.message}")
+                        local_corpus[output.depth] = input_val
+
+            thread_end = time.time()
+            print(thread_end - thread_now)
+            result_list.append(local_error_map)
+
+        base, remainder = divmod(self.fuzz_for, num_threads)
+        for i in range(num_threads):
+            iterations = base + (1 if i < remainder else 0)
+            p = mp.Process(target=worker_chunk, args=(iterations, deepcopy(self.corpus), thread_results))
+            p.start()
+            processes.append(p)
+
+        for p in processes:
+            p.join()
+
+        for local_error_map in thread_results:
+            for message, val in local_error_map.items():
+                if message not in self.error_map:
+                    self.error_map[message] = val
+
+        print(self.error_map)
+
+
+    def fuzz(self, min_depth=1, max_errors=1, assertion_disabled=False, parallel=False, procs=5):
         """
-        Coverage-based (concolic-style) fuzzing.
         Randomly mutates inputs from the corpus, tracks coverage depth, and
         identifies inputs that crash without being guarded by assertions.
         """
-        for _ in range(self.fuzz_for):
-            # print("FUZZ FOR: ", _)
-            seed = deepcopy(random.choice(list(self.corpus.values())))
-            candidate = self.mutate(seed)
+        if parallel:
+            self.fuzz_parallel(procs)
+        else:
+            for _ in range(self.fuzz_for):
+                # print("FUZZ FOR: ", _)
+                seed = deepcopy(random.choice(list(self.corpus.values())))
+                candidate = self.mutate(seed)
 
-            # print("CANDIDATE: ", candidate)
-            output = self._run(candidate, assertions_disabled=assertion_disabled)
-            if output.message == "assertion error" or output.message == "*":
-                continue
-            depth = output.depth
+                # print("CANDIDATE: ", candidate)
+                output = self._run(candidate, assertions_disabled=assertion_disabled)
+                if output.message == "assertion error" or output.message == "*":
+                    continue
+                depth = output.depth
 
-            if depth not in self.corpus:
-                self._handle_new_coverage(candidate, output, depth, min_depth)
-                if len(self.wrong_inputs) >= max_errors:
-                    break
-            elif self._is_smaller(candidate, self.corpus[depth]):
-                self.corpus[depth] = candidate
+                if depth not in self.corpus:
+                    self._handle_new_coverage(candidate, output, depth, min_depth)
+                    if len(self.wrong_inputs) >= max_errors:
+                        break
+                elif self._is_smaller(candidate, self.corpus[depth]):
+                    self.corpus[depth] = candidate
+
 
     def fuzz_print(self):
         if self.coverage_based:
@@ -365,12 +449,15 @@ class Fuzzer:
                     print(f"{input} --> {output.message}:{output.depth}")
         print(self.error_map)
 
-# method_id = "jpamb.cases.Tricky.crashy:(III[C)V"
+
+method_id = "jpamb.cases.BenchmarkSuite.plm:(III)I"
 # method_id = "jpamb.cases.SymbExecTest.misc:(III)I"
 # method_id = "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V"
 # method_id = "jpamb.cases.Arrays.arraySpellsHello:([C)V"
 # method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
 # method_id = "jpamb.cases.Tricky.PositiveIntegers:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V"
-method_id = "jpamb.cases.SymbExecTest.incr:(I)I"
-fuzzer = Fuzzer(method_id, fuzz_for=10000)
-fuzzer.fuzz()
+# method_id = "jpamb.cases.SymbExecTest.incr:(I)I"
+fuzzer = Fuzzer(method_id,symbolic_corpus=False,  fuzz_for=10000, coveraged_based=True)
+now = time.time()
+fuzzer.fuzz(parallel=True, procs=5)
+end = time.time()

@@ -91,3 +91,5 @@ def generate_corpus(branches, method_params):
             if sol:
                 corpus.append(generate_inputs(method_params, sol))
     return corpus
+
+

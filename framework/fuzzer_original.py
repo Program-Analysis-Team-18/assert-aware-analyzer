@@ -282,4 +282,4 @@ class Fuzzer:
 # method_id = "jpamb.cases.Tricky.PositiveIntegers:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V"
 method_id = "jpamb.cases.SymbExecTest.incr:(I)I"
 fuzzer = Fuzzer(method_id, fuzz_for=10000)
-fuzzer.fuzz()
+# fuzzer.fuzz()

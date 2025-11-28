@@ -37,7 +37,7 @@ def run_fuzzing(assert_map, logger, symbolic_fuzzer=False):
                 continue
 
             try:
-                fuzzer = Fuzzer(method.method_id, symbolic_corpus=symbolic_fuzzer)
+                fuzzer = Fuzzer(method.method_id, symbolic_corpus=False)
                 fuzzer.fuzz()
 
                 for wrong_inputs_set in fuzzer.wrong_inputs:
@@ -52,13 +52,11 @@ def run():
 
     # SYNTACTIC ANALYSIS
     assert_map = syntaxer.run()
-
     resolve_method_ids(assert_map, logger)
 
     # ASSERT CLASSIFICATION
     # (Z3 Solver + Param Generation Fuzzer + Interpreter)
     assert_map, time_measurements_classification = classifier.run(assert_map)
-
     # COVERAGE BASED FUZZING
     symbolic_exec_enable = True
     start_time_fuzzing = time.time()
