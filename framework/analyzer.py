@@ -2,6 +2,7 @@ import syntaxer
 import classifier
 import code_rewriter
 import utils
+import score
 from fuzzer import Fuzzer
 
 import time
