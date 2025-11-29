@@ -19,17 +19,24 @@ class CustomType:
            f.fuzz()
 """
 class Fuzzer:
-    def __init__(self, method: str, corpus: List = None, symbolic_corpus=False, coveraged_based: bool = True, fuzz_for: int = 100000):
-        self.method = method
-        self.coverage_based = coveraged_based
-        self.method_params = self.parse_parameters(method)
-        if symbolic_corpus:
-            self.corpus = {0: input for input in interpret(method, "".join(self.method_params), corpus=True)}
-        else:
-            self.corpus = {0: self.random_input() if corpus is None else corpus}
-        self.fuzz_for = fuzz_for
-        self.wrong_inputs: List[List[WrongInput]] = []
-        self.error_map = {}
+    def __init__(self, method: str, corpus: List = None, symbolic_corpus=False, coveraged_based: bool = True, fuzz_for: int = 10_000):
+        try:
+            self.method = method
+            self.coverage_based = coveraged_based
+            self.method_params = self.parse_parameters(method)
+            if symbolic_corpus:
+                    self.corpus = {0: input for input in interpret(method, "".join(self.method_params), corpus=True)}
+            else:
+                self.corpus = {0: self.random_input() if corpus is None else corpus}
+
+            # print(f"CORPUS: \n{self.corpus}")
+
+            self.fuzz_for = fuzz_for
+            self.wrong_inputs: List[List[WrongInput]] = []
+            self.error_map = {}
+        except ValueError as e:
+            print(f"Fuzzer error: {e}")
+            return ValueError(f"Fuzzer error: {e}")
 
 
     # Parses JVM descriptors between ( and ) into a list like ["I", "[C"].
@@ -255,6 +262,7 @@ class Fuzzer:
     
     def _search_argument_mutation(self, original_input, idx, depth, min_depth):
         for _ in range(self.fuzz_for):
+            # print(f"---FUZZ FOR 2: {self.fuzz_for}---------")
             candidate = deepcopy(original_input)
             mutant_source = deepcopy(random.choice(list(self.corpus.values())))
             mutated = self.mutate(mutant_source)[idx]
@@ -292,7 +300,7 @@ class Fuzzer:
     def _handle_new_coverage(self, input, output, depth, min_depth):
         self.corpus[depth] = input
 
-        if output.message not in("ok", "assertion error", "timeout"):
+        if output.message in("ok", "assertion error", "timeout"):
             return
 
         if depth < min_depth:
@@ -331,7 +339,7 @@ class Fuzzer:
 
             # print("CANDIDATE: ", candidate)
             output = self._run(candidate, assertions_disabled=assertion_disabled)
-            if output.message == "assertion error" or output.message == "*":
+            if output.message in ("assertion error", "timeout"):
                 continue
             depth = output.depth
 
@@ -371,6 +379,7 @@ class Fuzzer:
 # method_id = "jpamb.cases.Arrays.arraySpellsHello:([C)V"
 # method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
 # method_id = "jpamb.cases.Tricky.PositiveIntegers:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V"
-method_id = "jpamb.cases.SymbExecTest.incr:(I)I"
-fuzzer = Fuzzer(method_id, fuzz_for=10000)
-fuzzer.fuzz()
+# method_id = "jpamb.cases.BenchmarkSuite.incr:(I)I"
+# method_id = "jpamb.cases.BenchmarkSuite.divideByN:(II)V"
+# fuzzer = Fuzzer(method_id, fuzz_for=10000, symbolic_corpus=True)
+# fuzzer.fuzz()

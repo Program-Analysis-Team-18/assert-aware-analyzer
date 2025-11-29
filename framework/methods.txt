@@ -3,7 +3,7 @@ jpamb.cases.BenchmarkSuite.assertLiteralTrue:()V
 jpamb.cases.BenchmarkSuite.assertWithIncrement:()V
 jpamb.cases.BenchmarkSuite.assertArrayWrite:()V
 jpamb.cases.BenchmarkSuite.divideByN:(II)V
-jpamb.cases.BenchmarkSuite.divideByNMinus10:(III)V
+jpamb.cases.BenchmarkSuite.divideByNMinus12:(II)V
 jpamb.cases.BenchmarkSuite.withdraw:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V
 jpamb.cases.BenchmarkSuite.normalizeEdgeWeight:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;Ljpamb/utils/CappedInteger<init>II;)V
 jpamb.cases.BenchmarkSuite.calculateInterest:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;)V

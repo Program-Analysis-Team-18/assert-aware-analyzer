@@ -38,6 +38,7 @@ def run_fuzzing(assert_map, logger, symbolic_fuzzer=False):
 
             try:
                 fuzzer = Fuzzer(method.method_id, symbolic_corpus=symbolic_fuzzer)
+                # fuzzer = f.Fuzzer(method.method_id)
                 fuzzer.fuzz()
 
                 for wrong_inputs_set in fuzzer.wrong_inputs:
@@ -77,7 +78,8 @@ def run():
 
     print("Execution times:")
     print(f"Classification syntatic: {time_measurements_classification["static"]}\nClassification dynamic: {time_measurements_classification["dynamic"]}")
-    print(f"Rewriting that uses fuzzing: {time_measurements_fuzzing + time_measurements_rewriting}")
+    print(f"Rewriting: {time_measurements_rewriting}")
+    print(f"Fuzzing: {time_measurements_fuzzing} -------- Symbolic execution enabled: {symbolic_exec_enable}")
 
 if __name__ == "__main__":
     run()
