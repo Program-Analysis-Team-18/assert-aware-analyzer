@@ -40,7 +40,8 @@ def calculate_performance(assert_map):
         for m in c.methods:
             for a in m.assertions:
                 # print(f"c.class_name: {c.class_name} m.method_name: {m.method_name}")
-                if (a.classification == truth[c.class_name, m.method_name, a.absolute_start_line]):
+
+                if (a.classification == truth[c.class_name, m.method_name, a.absolute_start_point.row]):
                     score += 1
 
     print(f"score is {score} / {len(truth)}")

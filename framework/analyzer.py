@@ -4,6 +4,7 @@ import code_rewriter
 import utils
 import score
 from fuzzer import Fuzzer
+from score import calculate_performance
 
 import time
 
@@ -63,7 +64,7 @@ def run():
     # COVERAGE BASED FUZZING
     symbolic_exec_enable = True
     start_time_fuzzing = time.time()
-    run_fuzzing(assert_map, logger, symbolic_fuzzer=symbolic_exec_enable)
+    # run_fuzzing(assert_map, logger, symbolic_fuzzer=symbolic_exec_enable)
     end_time_fuzzing = time.time()
 
     time_measurements_fuzzing = end_time_fuzzing - start_time_fuzzing
@@ -71,7 +72,7 @@ def run():
     # CODE REWRITING
     # (Comments + Suggestions)
     start_time_rewriting = time.time()
-    code_rewriter.run(assert_map)
+    # code_rewriter.run(assert_map)
     end_time_rewriting = time.time()
 
     time_measurements_rewriting = end_time_rewriting - start_time_rewriting
@@ -80,6 +81,9 @@ def run():
     print(f"Classification syntatic: {time_measurements_classification["static"]}\nClassification dynamic: {time_measurements_classification["dynamic"]}")
     print(f"Rewriting: {time_measurements_rewriting}")
     print(f"Fuzzing: {time_measurements_fuzzing} -------- Symbolic execution enabled: {symbolic_exec_enable}")
+
+    calculate_performance(assert_map=assert_map)
+
 
 if __name__ == "__main__":
     run()
