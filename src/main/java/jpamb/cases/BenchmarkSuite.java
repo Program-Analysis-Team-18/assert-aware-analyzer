@@ -208,9 +208,10 @@ public class BenchmarkSuite {
         int res = 100 / s.get();
     }
 
-    @Tag({ USEFUL_ASSERT })
+    @Tag({ USEFUL_ASSERT, USELESS_ASSERT })
     public static void nestedArrayAccess(PositiveInteger index, PositiveInteger size) {
         assert index.get() < size.get();
+        assert index.get() < size.get() - 10;
         int[][] matrix = new int[size.get()][size.get()];
         matrix[index.get()][0] = 1;
     }
@@ -235,12 +236,12 @@ public class BenchmarkSuite {
         assert (arr[0]++) > 0;
     }
 
-    @Tag({ USEFUL_ASSERT })
+    @Tag({ USEFUL_ASSERT, USELESS_ASSERT })
     public static void complexMath(PositiveInteger a, PositiveInteger b) {
         // a, b >= 0
-        // prevent overflow or something?
         // simple div by zero
         assert a.get() + b.get() != 0;
+        assert a.get() + b.get() == 100; // useless
         int x = 100 / (a.get() + b.get());
     }
 
@@ -254,9 +255,10 @@ public class BenchmarkSuite {
         assert a.get() + 1 < 0;
     }
 
-    @Tag({ USEFUL_ASSERT })
+    @Tag({ USEFUL_ASSERT, USELESS_ASSERT })
     public static void loopBound(PositiveInteger limit) {
-        assert limit.get() < 100;
+        assert limit.get() < 100; // useful
+        assert limit.get() < 5; // useless
         int[] arr = new int[100];
         for(int i=0; i<=limit.get(); i++) {
             arr[i] = i;
@@ -275,7 +277,6 @@ public class BenchmarkSuite {
         }
     }
 
-    // end gemini cases 
-    
+    // end gemini cases
 
 }
