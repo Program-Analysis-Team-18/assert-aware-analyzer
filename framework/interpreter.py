@@ -945,33 +945,30 @@ def interpret(method, inputs, verbose=False, corpus=False, assertions_disabled=F
         else:
             return InterpretationResult("timeout", state.frames.peek().pc.offset)
 
-method_id = "jpamb.cases.BenchmarkSuite.divideByN:(II)V"
-print(interpret(method_id,"(1,2)", corpus=True))
 
+if __name__ == "__main__":
+    configure_logger()
+    if "--analyse" in sys.argv:
+        method = sys.argv[1]
+        params = method[method.index('(') + 1:method.index(')')]
 
-# if __name__ == "__main__":
-#     configure_logger()
-#     if "--analyse" in sys.argv:
-#         method = sys.argv[1]
-#         params = method[method.index('(') + 1:method.index(')')]
+        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
 
-#         analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
+        result = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
+        for branch in result:
+            # if "UNSAT" in branch:
+            print(branch)
+    else:
+        bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
 
-#         result = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
-#         for branch in result:
-#             # if "UNSAT" in branch:
-#             print(branch)
-#     else:
-#         bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
+        mid, minput = jpamb.getcase()
+        mininput_str = sys.argv[2]
+        state = generate_initial_state(mid, minput,mininput_str,bc)
 
-#         mid, minput = jpamb.getcase()
-#         mininput_str = sys.argv[2]
-#         state = generate_initial_state(mid, minput,mininput_str,bc)
-
-#         for _ in range(100_000):
-#             state = step(state, bc)
-#             if isinstance(state, InterpretationResult):
-#                 print(f"{state.message}:{state.depth}")
-#                 break
-#         else:
-#             print("*")
+        for _ in range(100_000):
+            state = step(state, bc)
+            if isinstance(state, InterpretationResult):
+                print(f"{state.message}:{state.depth}")
+                break
+        else:
+            print("*")
