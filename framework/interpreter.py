@@ -911,9 +911,10 @@ def interpret(method, inputs, verbose=False, corpus=False, assertions_disabled=F
         logger.remove()
 
     if corpus:
-        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(inputs)]
+        params = method[method.index('(') + 1:method.index(')')]
+        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
         try:
-            new_corpus = generate_corpus(analyse(PC(parse_methodid(method), 0), analyse_method_input, 50), inputs)
+            new_corpus = generate_corpus(analyse(PC(parse_methodid(method), 0), analyse_method_input, 50), params)
         except ValueError as e:
             # print("Error occured when generating a new corpus")
             raise ValueError(f"Corpus generation error: {e} occured when generating a new corpus")
@@ -944,30 +945,33 @@ def interpret(method, inputs, verbose=False, corpus=False, assertions_disabled=F
         else:
             return InterpretationResult("timeout", state.frames.peek().pc.offset)
 
+method_id = "jpamb.cases.BenchmarkSuite.divideByN:(II)V"
+print(interpret(method_id,"(1,2)", corpus=True))
 
-if __name__ == "__main__":
-    configure_logger()
-    if "--analyse" in sys.argv:
-        method = sys.argv[1]
-        params = method[method.index('(') + 1:method.index(')')]
 
-        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
+# if __name__ == "__main__":
+#     configure_logger()
+#     if "--analyse" in sys.argv:
+#         method = sys.argv[1]
+#         params = method[method.index('(') + 1:method.index(')')]
 
-        result = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
-        for branch in result:
-            # if "UNSAT" in branch:
-            print(branch)
-    else:
-        bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
+#         analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
 
-        mid, minput = jpamb.getcase()
-        mininput_str = sys.argv[2]
-        state = generate_initial_state(mid, minput,mininput_str,bc)
+#         result = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
+#         for branch in result:
+#             # if "UNSAT" in branch:
+#             print(branch)
+#     else:
+#         bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
 
-        for _ in range(100_000):
-            state = step(state, bc)
-            if isinstance(state, InterpretationResult):
-                print(f"{state.message}:{state.depth}")
-                break
-        else:
-            print("*")
+#         mid, minput = jpamb.getcase()
+#         mininput_str = sys.argv[2]
+#         state = generate_initial_state(mid, minput,mininput_str,bc)
+
+#         for _ in range(100_000):
+#             state = step(state, bc)
+#             if isinstance(state, InterpretationResult):
+#                 print(f"{state.message}:{state.depth}")
+#                 break
+#         else:
+#             print("*")

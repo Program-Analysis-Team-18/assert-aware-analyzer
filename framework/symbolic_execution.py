@@ -3,6 +3,7 @@ from jpamb import jvm
 from dataclasses import dataclass
 import z3
 from typing import Iterable
+from pathlib import Path
 
 import sys
 from loguru import logger
@@ -71,7 +72,7 @@ class Stack[T]:
         return "".join(f"{v}" for v in self.items)
 
 
-suite = jpamb.Suite()
+suite = jpamb.Suite(Path(__file__).parent.joinpath("../"))
 bc = Bytecode(suite, dict())
 
 
