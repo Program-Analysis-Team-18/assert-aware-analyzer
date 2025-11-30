@@ -453,5 +453,15 @@ def run() -> Map:
     mapping_output.append(assertion_mapping.return_class("BenchmarkSuite"))
     return mapping_output
 
+def return_empty_map():
+    assetion_mapping = Map()
+
+    parse_classes(assetion_mapping)
+
+    for cls in assetion_mapping.classes:
+        update_methods_change_state_field(cls)
+
+    return assetion_mapping
+
 if __name__ == "__main__":
     setup()

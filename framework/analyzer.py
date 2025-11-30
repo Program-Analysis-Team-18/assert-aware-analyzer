@@ -49,22 +49,32 @@ def run_fuzzing(assert_map, logger, symbolic_fuzzer=False):
                 logger.error(f"Fuzzer failed for {method.method_name}: {e}")
 
 
-def run():
+def run(Syntatic_analysis_enabled=True, Assetion_solver_enabled=True, Dynamic_analysis_enabled=True, Symbolic_execution_enabled=True):
     logger = utils.configure_logger()
+    start_syntatic_analysis = 0
+    end_syntatic_analysis = 0
 
     # SYNTACTIC ANALYSIS
-    assert_map = syntaxer.run()
-
-    resolve_method_ids(assert_map, logger)
+    if Syntatic_analysis_enabled:
+        start_syntatic_analysis = time.time()
+        assert_map = syntaxer.run()
+        resolve_method_ids(assert_map, logger)
+        end_syntatic_analysis = time.time()
+    else:
+        assert_map = syntaxer.return_empty_map()
+        
 
     # ASSERT CLASSIFICATION
     # (Z3 Solver + Param Generation Fuzzer + Interpreter)
-    assert_map, time_measurements_classification = classifier.run(assert_map)
+    if Assetion_solver_enabled or Dynamic_analysis_enabled:
+        assert_map, time_measurements_classification_z3_dynamic = classifier.run(assert_map, Assetion_solver_enabled, Dynamic_analysis_enabled)
+    else:
+        time_measurements_classification_z3_dynamic = {'static_solver': 0, 'dynamic': 0}
 
+    
     # COVERAGE BASED FUZZING
-    symbolic_exec_enable = True
     start_time_fuzzing = time.time()
-    # run_fuzzing(assert_map, logger, symbolic_fuzzer=symbolic_exec_enable)
+    run_fuzzing(assert_map, logger, symbolic_fuzzer=Symbolic_execution_enabled)
     end_time_fuzzing = time.time()
 
     time_measurements_fuzzing = end_time_fuzzing - start_time_fuzzing
@@ -72,18 +82,26 @@ def run():
     # CODE REWRITING
     # (Comments + Suggestions)
     start_time_rewriting = time.time()
-    # code_rewriter.run(assert_map)
+    code_rewriter.run(assert_map)
     end_time_rewriting = time.time()
 
     time_measurements_rewriting = end_time_rewriting - start_time_rewriting
 
     print("Execution times:")
-    print(f"Classification syntatic: {time_measurements_classification["static"]}\nClassification dynamic: {time_measurements_classification["dynamic"]}")
+    print(f"Classification static: {end_syntatic_analysis-start_syntatic_analysis}")
+    print(f"Classification z3_solver: {time_measurements_classification_z3_dynamic["static_solver"]}\nClassification dynamic: {time_measurements_classification_z3_dynamic["dynamic"]}")
+    print(f"Classification static total: {time_measurements_classification_z3_dynamic['static_solver'] + (end_syntatic_analysis - start_syntatic_analysis)}")
+    print(f"Classification total: {time_measurements_classification_z3_dynamic['static_solver'] + time_measurements_classification_z3_dynamic["dynamic"] + (end_syntatic_analysis - start_syntatic_analysis)}")
     print(f"Rewriting: {time_measurements_rewriting}")
-    print(f"Fuzzing: {time_measurements_fuzzing} -------- Symbolic execution enabled: {symbolic_exec_enable}")
+    print(f"Fuzzing: {time_measurements_fuzzing} -------- Symbolic execution enabled: {Symbolic_execution_enabled}")
 
     calculate_performance(assert_map=assert_map)
 
 
 if __name__ == "__main__":
-    run()
+    Syntatic_analysis_enabled = True
+    Assetion_solver_enabled = True
+    Dynamic_analysis_enabled = True
+
+    Symbolic_execution_enabled = True
+    run(Syntatic_analysis_enabled, Assetion_solver_enabled, Dynamic_analysis_enabled, Symbolic_execution_enabled)

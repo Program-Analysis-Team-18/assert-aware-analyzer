@@ -279,4 +279,123 @@ public class BenchmarkSuite {
 
     // end gemini cases
 
+    //start claude cases - for assertion rewriting:
+    @Tag({ USELESS_ASSERT })
+    public static void divideByPositive(int x, int n) {
+        assert x == 2;
+
+    if (n > 0) {
+        int result = x / n;
+    }
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void calculateRatio(int numerator, int denominator) {
+        assert numerator == 2;
+
+        int ratio = numerator / denominator;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void processValue(int value, int divisor) {
+        assert value == 2;
+
+        if (value > 100) {
+            divisor = divisor + 5;
+        }
+        int result = value / divisor;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void computeWithCondition(int a, int b) {
+        assert a == 2;
+
+        if (a != 0) {
+            int temp = 100 / a;
+        }
+        int result = a / b;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void nestedDivision(int x, int y, int z) {
+        assert x == 2;
+
+        if (x > 10) {
+            if (y != 0) {
+                int first = x / y;
+            }
+        }
+        int second = x / z;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void arrayAccess(int[] arr, int index) {
+        assert index == 2;
+
+        if (index >= 0) {
+            int value = arr[index];
+        }
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void multipleOperations(int a, int b, int c) {
+        assert a == 2;
+
+        int result1 = a / b;
+        int result2 = b / c;
+        int result3 = a / c;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void conditionalDivision(int x, int y) {
+        assert x == 10;
+
+        if (x % 2 == 0) {
+            int result = x / y;
+        } else {
+            int result = y / x;
+        }
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void loopWithDivision(int n, int divisor) {
+        assert n == 2;
+
+        for (int i = 0; i < n; i++) {
+            int result = i / divisor;
+        }
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void arrayIndexCalculation(int[] data, int size, int index) {
+        assert index == 2;
+
+        if (size > 0) {
+            int normalizedIndex = index / size;
+            int value = data[normalizedIndex];
+        }
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void convertCharToIndex(char c, int divisor) {
+        assert divisor == 2;
+
+        int charValue = (int) c;
+        int index = charValue / divisor;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void processCharRange(char start, char end, int step) {
+    assert start == 2;
+    
+    int range = end - start;
+    int segments = range / step;
+    
+    for (int i = 0; i < segments; i++) {
+        char current = (char) (start + i * step);
+    }
+    }
+
+    //end claude cases
+
 }

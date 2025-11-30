@@ -26,3 +26,15 @@ jpamb.cases.BenchmarkSuite.tautologyMath:(Ljpamb/utils/PositiveInteger<init>I;)V
 jpamb.cases.BenchmarkSuite.contradictionMath:(Ljpamb/utils/PositiveInteger<init>I;)V
 jpamb.cases.BenchmarkSuite.loopBound:(Ljpamb/utils/PositiveInteger<init>I;)V
 jpamb.cases.BenchmarkSuite.switchCase:(Ljpamb/utils/PositiveInteger<init>I;)V
+jpamb.cases.BenchmarkSuite.divideByPositive:(II)V
+jpamb.cases.BenchmarkSuite.calculateRatio:(II)V
+jpamb.cases.BenchmarkSuite.processValue:(II)V
+jpamb.cases.BenchmarkSuite.computeWithCondition:(II)V
+jpamb.cases.BenchmarkSuite.nestedDivision:(III)V
+jpamb.cases.BenchmarkSuite.arrayAccess:([II)V
+jpamb.cases.BenchmarkSuite.multipleOperations:(III)V
+jpamb.cases.BenchmarkSuite.conditionalDivision:(II)V
+jpamb.cases.BenchmarkSuite.loopWithDivision:(II)V
+jpamb.cases.BenchmarkSuite.arrayIndexCalculation:([III)V
+jpamb.cases.BenchmarkSuite.convertCharToIndex:(CI)V
+jpamb.cases.BenchmarkSuite.processCharRange:(CCI)V

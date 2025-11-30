@@ -36,3 +36,15 @@ BenchmarkSuite,contradictionMath,254,contradiction
 BenchmarkSuite,loopBound,259,useful
 BenchmarkSuite,loopBound,260,useless
 BenchmarkSuite,switchCase,269,useful
+BenchmarkSuite,divideByPositive,285,useless
+BenchmarkSuite,calculateRatio,294,useless
+BenchmarkSuite,processValue,301,useless
+BenchmarkSuite,computeWithCondition,311,useless
+BenchmarkSuite,nestedDivision,321,useless
+BenchmarkSuite,arrayAccess,333,useless
+BenchmarkSuite,multipleOperations,342,useless
+BenchmarkSuite,conditionalDivision,351,useless
+BenchmarkSuite,loopWithDivision,362,useless
+BenchmarkSuite,arrayIndexCalculation,371,useless
+BenchmarkSuite,convertCharToIndex,381,useless
+BenchmarkSuite,processCharRange,389,useless
