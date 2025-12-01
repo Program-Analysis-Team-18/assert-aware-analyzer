@@ -5,6 +5,7 @@ import utils
 import score
 from fuzzer import Fuzzer
 from score import calculate_performance
+from interpreter import interpret
 
 import time
 
@@ -38,8 +39,10 @@ def run_fuzzing(assert_map, logger, symbolic_fuzzer=False):
                 continue
 
             try:
+                method_params = method[method.index('(') + 1:method.index(')')]
+                if method_params == "()" or "CappedInteger" in method_params:
+                    continue
                 fuzzer = Fuzzer(method.method_id, symbolic_corpus=symbolic_fuzzer)
-                # fuzzer = f.Fuzzer(method.method_id)
                 fuzzer.fuzz()
 
                 for wrong_inputs_set in fuzzer.wrong_inputs:

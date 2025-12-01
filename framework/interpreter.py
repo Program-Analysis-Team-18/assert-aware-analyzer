@@ -78,6 +78,11 @@ class InterpretationResult:
         self.depth = depth
         self.message = message
 
+@dataclass
+class CustomType:
+    def __init__(self, name, params):
+        self.name = name
+        self.init_params = params
 
 @dataclass
 class PC:
@@ -906,17 +911,38 @@ def input_is_an_object() -> bool:
 
 
 def interpret(method, inputs, verbose=False, corpus=False, assertions_disabled=False) -> InterpretationResult:
-    # print(f"INTERPRETER method: {method}, inputs: {inputs}")
     if not verbose:
         logger.remove()
 
     if corpus:
+        analyse_method_input = []
         params = method[method.index('(') + 1:method.index(')')]
-        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
+        method_params = params
+        primitive_params = ""
+        params_count = 0
+        while len(params) > 0:
+            if params[0] == 'L':
+                analyse_method_input.append((chr(ord('a') + params_count), jvm.Char()))
+                primitive_params += params[params.find(';') -1: params.find(';')]
+                params = params[params.find(';') + 1:]
+                params_count += 1
+            elif params[0] == '[':
+                params = params[2:]
+                primitive_params += params[0:2]
+                analyse_method_input.append((chr(ord('a') + params_count), jvm.Char()))
+                params_count += 1
+            else:
+                primitive_params += params[0]
+                analyse_method_input.append((chr(ord('a') + params_count), jvm.Char()))
+                params = params[1:]
         try:
-            new_corpus = generate_corpus(analyse(PC(parse_methodid(method), 0), analyse_method_input, 50), params)
+            branches = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
+            # for branch in branches:
+            #     print(branch)
+            # print(primitive_params)
+            # print(analyse_method_input)
+            new_corpus = generate_corpus(branches, primitive_params, method_params)
         except ValueError as e:
-            # print("Error occured when generating a new corpus")
             raise ValueError(f"Corpus generation error: {e} occured when generating a new corpus")
 
         return new_corpus
@@ -945,30 +971,29 @@ def interpret(method, inputs, verbose=False, corpus=False, assertions_disabled=F
         else:
             return InterpretationResult("timeout", state.frames.peek().pc.offset)
 
+print(interpret("jpamb.cases.BenchmarkSuite.safeArrayAccessNested:(Ljpamb/utils/PositiveInteger<init>I;I)V", "(new jpamb/utils/PositiveInteger(2),223)", corpus=True))
 
-if __name__ == "__main__":
-    configure_logger()
-    if "--analyse" in sys.argv:
-        method = sys.argv[1]
-        params = method[method.index('(') + 1:method.index(')')]
-
-        analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
-
-        result = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
-        for branch in result:
-            # if "UNSAT" in branch:
-            print(branch)
-    else:
-        bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
-
-        mid, minput = jpamb.getcase()
-        mininput_str = sys.argv[2]
-        state = generate_initial_state(mid, minput,mininput_str,bc)
-
-        for _ in range(100_000):
-            state = step(state, bc)
-            if isinstance(state, InterpretationResult):
-                print(f"{state.message}:{state.depth}")
-                break
-        else:
-            print("*")
+# if __name__ == "__main__":
+#     configure_logger()
+#     if "--analyse" in sys.argv:
+#         method = sys.argv[1]
+#         params = method[method.index('(') + 1:method.index(')')]
+#         analyse_method_input = [(chr(ord('a') + i), jvm.Char()) for i, _ in enumerate(params)]
+#         result = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
+#         for branch in result:
+#             # if "UNSAT" in branch:
+#             print(branch)
+#     else:
+#         bc = Bytecode(jpamb.Suite(Path(__file__).parent.joinpath("../")), {})
+#
+#         mid, minput = jpamb.getcase()
+#         mininput_str = sys.argv[2]
+#         state = generate_initial_state(mid, minput,mininput_str,bc)
+#
+#         for _ in range(100_000):
+#             state = step(state, bc)
+#             if isinstance(state, InterpretationResult):
+#                 print(f"{state.message}:{state.depth}")
+#                 break
+#         else:
+#             print("*")

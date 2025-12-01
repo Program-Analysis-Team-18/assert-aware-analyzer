@@ -234,7 +234,7 @@ def step(pc: PC, state: SymState) -> Iterable[tuple[PC, SymState, SymPath]]:
         case jvm.If(condition=cond, target=target):
             v2 = state.stack.pop()
             v1 = state.stack.pop()
-            
+
             z3_v1 = to_z3_expr(v1)
             z3_v2 = to_z3_expr(v2)
             
@@ -303,6 +303,8 @@ def step(pc: PC, state: SymState) -> Iterable[tuple[PC, SymState, SymPath]]:
             new_state = state.copy()
             # Create a symbolic variable for this static field
             clean_name = f.fieldid.name.replace("$", "")
+            if clean_name == "assertionsDisabled":
+                return [(PC(pc.method, pc.offset + 2), new_state, [])]
             field_var = z3.Int(f"field_{clean_name}")
             new_state.stack.push(SymValue(field_var))
             return [(PC(pc.method, pc.offset + 1), new_state, [])]
@@ -390,14 +392,14 @@ def step(pc: PC, state: SymState) -> Iterable[tuple[PC, SymState, SymPath]]:
             # For now, use option 2 for simplicity
             new_state = state.copy()
             
-            # Pop arguments
-            num_args = len(m.methodid.params)
-            if not isinstance(opr, jvm.InvokeStatic):
-                num_args += 1  # Include 'this' reference
-            
-            for _ in range(num_args):
-                new_state.stack.pop()
-            
+            # # Pop arguments
+            # num_args = len(m.methodid.params)
+            # if not isinstance(opr, jvm.InvokeStatic):
+            #     num_args += 1  # Include 'this' reference
+            #
+            # for _ in range(num_args):
+            #     new_state.stack.pop()
+            #
             # If method has return type, push symbolic return value
             # if m.methodid.returntype is not None and m.methodid.returntype != jvm.Void():
             #     ret_var = z3.Int(f"ret_{m.methodid.name}_{pc.offset}")
@@ -416,17 +418,6 @@ def step(pc: PC, state: SymState) -> Iterable[tuple[PC, SymState, SymPath]]:
             # For unimplemented operations, just advance PC
             logger.warning(f"Unimplemented symbolic operation: {opr}")
             return [(PC(pc.method, pc.offset + 1), state.copy(), [])]
-
-def interesting(state: SymState, path: SymPath) -> str | None:
-    """
-    Check if the state represents an interesting condition to report.
-    Returns a description if interesting, None otherwise.
-    """
-    # Example: Check if we can reach a state with specific properties
-    # This is where you'd add your analysis logic
-    
-    # For now, just return None (no interesting states found)
-    return None
 
 
 def analyse(pc: PC, inputs: list[tuple[str, jvm.Type]], max_depth: int) -> list[str]:
@@ -460,11 +451,6 @@ def analyse(pc: PC, inputs: list[tuple[str, jvm.Type]], max_depth: int) -> list[
         
         logger.debug(f"Exploring: {current_pc} at depth {n}")
         
-        # Check if state is interesting
-        issue = interesting(current_state, path)
-        if issue:
-            return f"found interesting state: {issue}"
-                
         # Generate next states
         try:
             next_states = step(current_pc, current_state)
