@@ -388,7 +388,7 @@ class Fuzzer:
 method_id = "jpamb.cases.BenchmarkSuite.safeArrayAccessNested:(Ljpamb/utils/PositiveInteger<init>I;I)V"
 # method_id = "jpamb.cases.BenchmarkSuite.incr:(I)I"
 # method_id = "jpamb.cases.BenchmarkSuite.divideByN:(II)V"
-fuzzer = Fuzzer(method_id, fuzz_for=100000, symbolic_corpus=True)
+fuzzer = Fuzzer(method_id, fuzz_for=10000, symbolic_corpus=True)
 print(fuzzer.random_input())
 fuzzer.fuzz()
 print(fuzzer.wrong_inputs)
