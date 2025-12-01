@@ -413,7 +413,7 @@ def from_class_get_method_nodes(cls: Classes):
         cls.add_method(get_method_data(method_name, method_node, file_data))
 
 def parse_classes(assertion_map: Map):
-    root = "/src/main/java/jpamb/"
+    root = "src/main/java/jpamb/"
     java_files = list(Path(root).rglob("*.java"))
 
     for class_file in java_files:

@@ -24,8 +24,11 @@ class Fuzzer:
             self.method = method
             self.coverage_based = coveraged_based
             self.method_params = self.parse_parameters(method)
+            self.corpus = {}
             if symbolic_corpus:
-                    generated_corpus = {0: input for input in interpret(method, "".join(self.method_params), corpus=True)}
+                    result = interpret(method, "", corpus=True)
+                    generated_corpus = {i: inp for i, inp in enumerate(result)}
+                    self.corpus = generated_corpus
                     print(f"method: {method}, generated_corpus: {generated_corpus}")
                     if not generated_corpus:
                         self.corpus = {0: self.random_input() if corpus is None else corpus}
@@ -330,7 +333,7 @@ class Fuzzer:
         )
 
     
-    def fuzz(self, min_depth=1, max_errors=1, assertion_disabled=False):
+    def fuzz(self, min_depth=1, max_errors=1, assertion_disabled=True):
         """
         Coverage-based (concolic-style) fuzzing.
         Randomly mutates inputs from the corpus, tracks coverage depth, and
@@ -382,9 +385,10 @@ class Fuzzer:
 # method_id = "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V"
 # method_id = "jpamb.cases.Arrays.arraySpellsHello:([C)V"
 # method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
-method_id = "jpamb.cases.BenchmarkSuite.SafeArrayAccessNested:(Ljpamb/utils/PositiveInteger<init>I;)V"
+method_id = "jpamb.cases.BenchmarkSuite.safeArrayAccessNested:(Ljpamb/utils/PositiveInteger<init>I;I)V"
 # method_id = "jpamb.cases.BenchmarkSuite.incr:(I)I"
 # method_id = "jpamb.cases.BenchmarkSuite.divideByN:(II)V"
-fuzzer = Fuzzer(method_id, fuzz_for=10000, symbolic_corpus=False)
+fuzzer = Fuzzer(method_id, fuzz_for=100000, symbolic_corpus=True)
 print(fuzzer.random_input())
-# fuzzer.fuzz()
+fuzzer.fuzz()
+print(fuzzer.wrong_inputs)

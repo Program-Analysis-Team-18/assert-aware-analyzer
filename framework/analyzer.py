@@ -5,8 +5,6 @@ import utils
 import score
 from fuzzer import Fuzzer
 from score import calculate_performance
-from interpreter import interpret
-
 import time
 
 
@@ -39,11 +37,12 @@ def run_fuzzing(assert_map, logger, symbolic_fuzzer=False):
                 continue
 
             try:
-                method_params = method[method.index('(') + 1:method.index(')')]
-                if method_params == "()" or "CappedInteger" in method_params:
+                method_params = method.method_id[method.method_id.index('(') + 1:method.method_id.index(')')]
+                if method_params == "()" or "CappedInteger" in method_params or '[' in method_params:
                     continue
                 fuzzer = Fuzzer(method.method_id, symbolic_corpus=symbolic_fuzzer)
                 fuzzer.fuzz()
+                print(fuzzer.wrong_inputs)
 
                 for wrong_inputs_set in fuzzer.wrong_inputs:
                     method.add_wrong_inputs(wrong_inputs_set)
@@ -98,13 +97,13 @@ def run(Syntatic_analysis_enabled=True, Assetion_solver_enabled=True, Dynamic_an
     print(f"Rewriting: {time_measurements_rewriting}")
     print(f"Fuzzing: {time_measurements_fuzzing} -------- Symbolic execution enabled: {Symbolic_execution_enabled}")
 
-    calculate_performance(assert_map=assert_map)
+    # calculate_performance(assert_map=assert_map)
 
 
 if __name__ == "__main__":
     Syntatic_analysis_enabled = True
-    Assetion_solver_enabled = True
-    Dynamic_analysis_enabled = True
+    Assetion_solver_enabled = False
+    Dynamic_analysis_enabled = False
 
     Symbolic_execution_enabled = True
     run(Syntatic_analysis_enabled, Assetion_solver_enabled, Dynamic_analysis_enabled, Symbolic_execution_enabled)

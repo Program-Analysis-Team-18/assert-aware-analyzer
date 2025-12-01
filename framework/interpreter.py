@@ -971,7 +971,7 @@ def interpret(method, inputs, verbose=False, corpus=False, assertions_disabled=F
         else:
             return InterpretationResult("timeout", state.frames.peek().pc.offset)
 
-print(interpret("jpamb.cases.BenchmarkSuite.safeArrayAccessNested:(Ljpamb/utils/PositiveInteger<init>I;I)V", "(new jpamb/utils/PositiveInteger(2),223)", corpus=True))
+# print(interpret("jpamb.cases.BenchmarkSuite.safeArrayAccessNested:(Ljpamb/utils/PositiveInteger<init>I;I)V", "(new jpamb/utils/PositiveInteger(2),223)", corpus=True))
 
 # if __name__ == "__main__":
 #     configure_logger()

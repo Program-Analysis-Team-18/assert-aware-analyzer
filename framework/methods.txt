@@ -5,7 +5,7 @@ jpamb.cases.BenchmarkSuite.assertArrayWrite:()V
 jpamb.cases.BenchmarkSuite.divideByN:(II)V
 jpamb.cases.BenchmarkSuite.divideByNMinus12:(II)V
 jpamb.cases.BenchmarkSuite.withdraw:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V
-jpamb.cases.BenchmarkSuite.normalizeEdgeWeight:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;Ljpamb/utils/CappedInteger<init>II;)V
+jpamb.cases.BenchmarkSuite.normalizeEdgeWeight:(Ljpamb/utils/PositiveInteger<init>I;II)V
 jpamb.cases.BenchmarkSuite.calculateInterest:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;)V
 jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V
 jpamb.cases.BenchmarkSuite.extractBlock:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/CappedInteger<init>II;Ljpamb/utils/CappedInteger<init>II;)V
@@ -38,3 +38,4 @@ jpamb.cases.BenchmarkSuite.loopWithDivision:(II)V
 jpamb.cases.BenchmarkSuite.arrayIndexCalculation:([III)V
 jpamb.cases.BenchmarkSuite.convertCharToIndex:(CI)V
 jpamb.cases.BenchmarkSuite.processCharRange:(CCI)V
+jpamb.cases.BenchmarkSuite.safeArrayAccessNested:(Ljpamb/utils/PositiveInteger<init>I;I)V

@@ -42,7 +42,8 @@ public class BenchmarkSuite {
 
     @Tag({ SIDE_EFFECT_ASSERT })
     public static void assertArrayWrite(int[] arr) {
-        assert (arr[0] = 9) == 9;
+        arr[0] = 9;
+        assert arr[0] == 9;
     }
 
     @Tag({ USELESS_ASSERT })
@@ -169,6 +170,20 @@ public class BenchmarkSuite {
         // ... more stuff ...
     }
 
+
+   // symb exec custom class test
+    @Tag({ USELESS_ASSERT })
+    public static void safeArrayAccessNested(PositiveInteger index, int limit) {
+        assert index.get() >= 1;
+        if (limit > 0)
+        {
+            if (index.get() < limit)
+            {
+                int[] arr = new int[limit];
+                arr[index.get()] = 1;
+            }
+        }
+    }
 
     //start gemini cases 
     
