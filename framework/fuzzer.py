@@ -27,7 +27,7 @@ class Fuzzer:
             self.corpus = {}
             if symbolic_corpus:
                     result = interpret(method, "", corpus=True)
-                    generated_corpus = {i: inp for i, inp in enumerate(result)}
+                    generated_corpus = {-i-1: inp for i, inp in enumerate(result)}
                     self.corpus = generated_corpus
                     print(f"method: {method}, generated_corpus: {generated_corpus}")
                     if not generated_corpus:
@@ -174,7 +174,7 @@ class Fuzzer:
                 interesting_substitutions = [-1, 0, 1, 128, -128]
                 ops = [
                     lambda v: v ^ (1 << random.randint(0, 7)) if isinstance(v, int) else v * v,
-                    lambda v: v + random.randint(-10, 10),
+                    lambda v: v + random.randint(-100, 100),
                     lambda v: random.choice(interesting_substitutions)
                 ]
                 return random.choice(ops)(x)
@@ -316,7 +316,7 @@ class Fuzzer:
         # If enabling assertions gives same depth, crash is real, not blocked
         if not self._crash_is_unprotected(input, depth):
             return
-
+        print(output.message)
         # Find faulty inputs
         # print("FIND FAULTY WITH THIS OUTPUT: ", output.message)
         wrong_inputs = self._find_faulty_arguments(input, depth, min_depth)
@@ -361,7 +361,9 @@ class Fuzzer:
         if self.coverage_based:
             for _ in range(self.fuzz_for):
                 input = self.mutate(deepcopy(random.choice(list(self.corpus.values()))))
-                output = interpret(self.method, self.format_input(input), False)
+                if input == [10, 12]:
+                    print(input)
+                output = interpret(self.method, self.format_input(input), False, assertions_disabled=True)
                 if output.depth not in self.corpus:
                     print(f"New input: {input} with depth: {output.depth}")
                     print(f"{input} -> {output.message}")
@@ -385,10 +387,12 @@ class Fuzzer:
 # method_id = "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V"
 # method_id = "jpamb.cases.Arrays.arraySpellsHello:([C)V"
 # method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
-method_id = "jpamb.cases.BenchmarkSuite.safeArrayAccessNested:(Ljpamb/utils/PositiveInteger<init>I;I)V"
+# method_id = "jpamb.cases.BenchmarkSuite.safeArrayAccessNested:(Ljpamb/utils/PositiveInteger<init>I;I)V"
 # method_id = "jpamb.cases.BenchmarkSuite.incr:(I)I"
-# method_id = "jpamb.cases.BenchmarkSuite.divideByN:(II)V"
+# method_id = "jpamb.cases.BenchmarkSuite.divideByNMinus12:(II)V"
+method_id = "jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V"
 fuzzer = Fuzzer(method_id, fuzz_for=10000, symbolic_corpus=True)
-print(fuzzer.random_input())
+# print(fuzzer.random_input())
 fuzzer.fuzz()
+# print(fuzzer._run([10,12], False).message)
 print(fuzzer.wrong_inputs)

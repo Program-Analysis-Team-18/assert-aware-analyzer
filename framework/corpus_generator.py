@@ -50,7 +50,6 @@ def solve_branch(conds, method_params):
     Solve symbolic constraints with Z3.
     """
     var_names = extract_z3_variables(conds)
-    print(method_params)
     z3_vars = {}
     for name, t in zip(var_names, method_params):
         if t == 'I':

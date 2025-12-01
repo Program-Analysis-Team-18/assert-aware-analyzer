@@ -200,7 +200,7 @@ class Frame:
         return Frame({}, Stack.empty(), PC(method, 0))
 
 def _new_get_obj_value(classname: jvm.ClassName):
-    suite = jpamb.Suite()
+    suite = jpamb.Suite(Path(__file__).parent.joinpath("../"))
     class_info = suite.findclass(classname)
     #we need to push an reference of this class onto the stack
     #dict -> jvm.AbsMethodID?
@@ -935,6 +935,7 @@ def interpret(method, inputs, verbose=False, corpus=False, assertions_disabled=F
                 primitive_params += params[0]
                 analyse_method_input.append((chr(ord('a') + params_count), jvm.Char()))
                 params = params[1:]
+                params_count +=1
         try:
             branches = analyse(PC(parse_methodid(method), 0), analyse_method_input, 50)
             # for branch in branches:

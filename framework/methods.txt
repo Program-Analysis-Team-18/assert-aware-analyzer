@@ -38,4 +38,3 @@ jpamb.cases.BenchmarkSuite.loopWithDivision:(II)V
 jpamb.cases.BenchmarkSuite.arrayIndexCalculation:([III)V
 jpamb.cases.BenchmarkSuite.convertCharToIndex:(CI)V
 jpamb.cases.BenchmarkSuite.processCharRange:(CCI)V
-jpamb.cases.BenchmarkSuite.safeArrayAccessNested:(Ljpamb/utils/PositiveInteger<init>I;I)V

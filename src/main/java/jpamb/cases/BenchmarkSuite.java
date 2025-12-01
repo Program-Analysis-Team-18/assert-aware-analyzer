@@ -170,21 +170,6 @@ public class BenchmarkSuite {
         // ... more stuff ...
     }
 
-
-   // symb exec custom class test
-    @Tag({ USELESS_ASSERT })
-    public static void safeArrayAccessNested(PositiveInteger index, int limit) {
-        assert index.get() >= 1;
-        if (limit > 0)
-        {
-            if (index.get() < limit)
-            {
-                int[] arr = new int[limit];
-                arr[index.get()] = 1;
-            }
-        }
-    }
-
     //start gemini cases 
     
     @Tag({ USEFUL_ASSERT })
