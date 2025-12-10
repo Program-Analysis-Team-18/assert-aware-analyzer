@@ -19,17 +19,30 @@ class CustomType:
            f.fuzz()
 """
 class Fuzzer:
-    def __init__(self, method: str, corpus: List = None, symbolic_corpus=False, coveraged_based: bool = True, fuzz_for: int = 100000):
-        self.method = method
-        self.coverage_based = coveraged_based
-        self.method_params = self.parse_parameters(method)
-        if symbolic_corpus:
-            self.corpus = {0: input for input in interpret(method, "".join(self.method_params), corpus=True)}
-        else:
-            self.corpus = {0: self.random_input() if corpus is None else corpus}
-        self.fuzz_for = fuzz_for
-        self.wrong_inputs: List[List[WrongInput]] = []
-        self.error_map = {}
+    def __init__(self, method: str, corpus: List = None, symbolic_corpus=False, coveraged_based: bool = True, fuzz_for: int = 10_000):
+        try:
+            self.method = method
+            self.coverage_based = coveraged_based
+            self.method_params = self.parse_parameters(method)
+            self.corpus = {}
+            if symbolic_corpus:
+                    result = interpret(method, "", corpus=True)
+                    generated_corpus = {-i-1: inp for i, inp in enumerate(result)}
+                    self.corpus = generated_corpus
+                    print(f"method: {method}, generated_corpus: {generated_corpus}")
+                    if not generated_corpus:
+                        self.corpus = {0: self.random_input() if corpus is None else corpus}
+            else:
+                self.corpus = {0: self.random_input() if corpus is None else corpus}
+
+            # print(f"CORPUS: \n{self.corpus}")
+
+            self.fuzz_for = fuzz_for
+            self.wrong_inputs: List[List[WrongInput]] = []
+            self.error_map = {}
+        except ValueError as e:
+            print(f"Fuzzer error: {e}")
+            return ValueError(f"Fuzzer error: {e}")
 
 
     # Parses JVM descriptors between ( and ) into a list like ["I", "[C"].
@@ -161,7 +174,7 @@ class Fuzzer:
                 interesting_substitutions = [-1, 0, 1, 128, -128]
                 ops = [
                     lambda v: v ^ (1 << random.randint(0, 7)) if isinstance(v, int) else v * v,
-                    lambda v: v + random.randint(-10, 10),
+                    lambda v: v + random.randint(-100, 100),
                     lambda v: random.choice(interesting_substitutions)
                 ]
                 return random.choice(ops)(x)
@@ -208,7 +221,8 @@ class Fuzzer:
                         input[i][j] = mutation(input[i][j])
                     input[i].insert(0, custom_type)
                 else:
-                    input[i] = mutation(input[i])
+                    if random.choice([True, False]):
+                        input[i] = mutation(input[i])
             return input
         else:
             return mutation(input)
@@ -255,6 +269,7 @@ class Fuzzer:
     
     def _search_argument_mutation(self, original_input, idx, depth, min_depth):
         for _ in range(self.fuzz_for):
+            # print(f"---FUZZ FOR 2: {self.fuzz_for}---------")
             candidate = deepcopy(original_input)
             mutant_source = deepcopy(random.choice(list(self.corpus.values())))
             mutated = self.mutate(mutant_source)[idx]
@@ -292,7 +307,7 @@ class Fuzzer:
     def _handle_new_coverage(self, input, output, depth, min_depth):
         self.corpus[depth] = input
 
-        if output.message not in("ok", "assertion error", "timeout"):
+        if output.message in("ok", "assertion error", "timeout"):
             return
 
         if depth < min_depth:
@@ -301,7 +316,7 @@ class Fuzzer:
         # If enabling assertions gives same depth, crash is real, not blocked
         if not self._crash_is_unprotected(input, depth):
             return
-
+        print(output.message)
         # Find faulty inputs
         # print("FIND FAULTY WITH THIS OUTPUT: ", output.message)
         wrong_inputs = self._find_faulty_arguments(input, depth, min_depth)
@@ -318,7 +333,7 @@ class Fuzzer:
         )
 
     
-    def fuzz(self, min_depth=1, max_errors=1, assertion_disabled=False):
+    def fuzz(self, min_depth=1, max_errors=1, assertion_disabled=True):
         """
         Coverage-based (concolic-style) fuzzing.
         Randomly mutates inputs from the corpus, tracks coverage depth, and
@@ -331,7 +346,7 @@ class Fuzzer:
 
             # print("CANDIDATE: ", candidate)
             output = self._run(candidate, assertions_disabled=assertion_disabled)
-            if output.message == "assertion error" or output.message == "*":
+            if output.message in ("assertion error", "timeout"):
                 continue
             depth = output.depth
 
@@ -346,7 +361,9 @@ class Fuzzer:
         if self.coverage_based:
             for _ in range(self.fuzz_for):
                 input = self.mutate(deepcopy(random.choice(list(self.corpus.values()))))
-                output = interpret(self.method, self.format_input(input), False)
+                if input == [10, 12]:
+                    print(input)
+                output = interpret(self.method, self.format_input(input), False, assertions_disabled=True)
                 if output.depth not in self.corpus:
                     print(f"New input: {input} with depth: {output.depth}")
                     print(f"{input} -> {output.message}")
@@ -370,7 +387,12 @@ class Fuzzer:
 # method_id = "jpamb.cases.CustomClasses.Withdraw:(Ljpamb/cases/PositiveInteger<init>I;)V"
 # method_id = "jpamb.cases.Arrays.arraySpellsHello:([C)V"
 # method_id = "jpamb.cases.Tricky.charToInt:([I[C)V"
-# method_id = "jpamb.cases.Tricky.PositiveIntegers:(Ljpamb/cases/PositiveInteger<init>I;Ljpamb/cases/PositiveInteger<init>I;)V"
-method_id = "jpamb.cases.SymbExecTest.incr:(I)I"
-fuzzer = Fuzzer(method_id, fuzz_for=10000)
-fuzzer.fuzz()
+# method_id = "jpamb.cases.BenchmarkSuite.safeArrayAccessNested:(Ljpamb/utils/PositiveInteger<init>I;I)V"
+# method_id = "jpamb.cases.BenchmarkSuite.incr:(I)I"
+# method_id = "jpamb.cases.BenchmarkSuite.divideByNMinus12:(II)V"
+# method_id = "jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V"
+# fuzzer = Fuzzer(method_id, fuzz_for=10000, symbolic_corpus=True)
+# # print(fuzzer.random_input())
+# fuzzer.fuzz()
+# # print(fuzzer._run([10,12], False).message)
+# print(fuzzer.wrong_inputs)

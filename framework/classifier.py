@@ -58,7 +58,7 @@ def classify_advanced(result: SolveResult, method_id: str, params_order: list[st
             return 'useless', output.depth
 
 
-def run(assert_map: Map) -> Map:
+def run(assert_map: Map, Assetion_solver_enabled=True, Dynamic_analysis_enabled=True) -> Map:
     """Classify all assertions not classified from Syntactic Analysis."""
 
     Time_measurements_basic_classification = []
@@ -74,27 +74,33 @@ def run(assert_map: Map) -> Map:
                 classification = a.classification
                 if classification == 'unclassified':
 
-                    start_time_basic = time.time()
+                    start_time_basic = 0
+                    end_time_basic = 0
                     # base classification
-                    solver = AssertSolver([a.assertion_node])
-                    result = solver.solve()
-                    classification = classify_base(result)
-                    end_time_basic = time.time()
-
-                    start_time_advanced = time.time()
+                    if Assetion_solver_enabled:
+                        start_time_basic = time.time()
+                        solver = AssertSolver([a.assertion_node])
+                        result = solver.solve()
+                        classification = classify_base(result)
+                        end_time_basic = time.time()
+                    
+                    start_time_advanced = 0
+                    end_time_advanced = 0
                     # advanced classification
-                    if classification == 'contingent':
-                        # find method id from methods.txt using method name
-                        # TODO: extract logic in analyzer
-                        params_order = [p.name for p in m.parameters]
+                    if Dynamic_analysis_enabled:
+                        start_time_advanced = time.time()
+                        if classification == 'contingent':
+                            # find method id from methods.txt using method name
+                            # TODO: extract logic in analyzer
+                            params_order = [p.name for p in m.parameters]
 
-                        for i in range(2,10):
-                            classification, depth = classify_advanced(result, m.method_id, params_order)
-                            if classification != 'useful' or depth != 0:
-                                break
-                            solver = AssertSolver([a.assertion_node])
-                            result = solver.solve(attempts=i)
-                    end_time_advanced = time.time()
+                            for i in range(2,10):
+                                classification, depth = classify_advanced(result, m.method_id, params_order)
+                                if classification != 'useful' or depth != 0:
+                                    break
+                                solver = AssertSolver([a.assertion_node])
+                                result = solver.solve(attempts=i)
+                        end_time_advanced = time.time()
 
                     Time_measurements_basic_classification.append(end_time_basic-start_time_basic)
                     Time_measurements_advanced_classification.append(end_time_advanced-start_time_advanced)
@@ -104,6 +110,6 @@ def run(assert_map: Map) -> Map:
     Time_basic_classification_avg = sum(Time_measurements_basic_classification)/len(Time_measurements_basic_classification)
     Time_adv_classification_avg = sum(Time_measurements_advanced_classification)/len(Time_measurements_advanced_classification)
 
-    Time_measurements = {"static": Time_basic_classification_avg, "dynamic": Time_adv_classification_avg}
+    Time_measurements = {"static_solver": Time_basic_classification_avg, "dynamic": Time_adv_classification_avg}
 
     return assert_map, Time_measurements

@@ -3,6 +3,7 @@ from jpamb import jvm
 from dataclasses import dataclass
 import z3
 from typing import Iterable
+from pathlib import Path
 
 import sys
 from loguru import logger
@@ -71,7 +72,7 @@ class Stack[T]:
         return "".join(f"{v}" for v in self.items)
 
 
-suite = jpamb.Suite()
+suite = jpamb.Suite(Path(__file__).parent.joinpath("../"))
 bc = Bytecode(suite, dict())
 
 
@@ -148,6 +149,14 @@ def step(pc: PC, state: SymState) -> Iterable[tuple[PC, SymState, SymPath]]:
             new_state.stack.push(v)
             return [(PC(pc.method, pc.offset + 1), new_state, [])]
         
+        case jvm.Load(type=jvm.Reference(), index=i):
+            new_state = state.copy()
+            v = state.locals.get(i)
+            if v is None:
+                raise RuntimeError(f"Local variable {i} not initialized")
+            new_state.stack.push(v)
+            return [(PC(pc.method, pc.offset + 1), new_state, [])]
+        
         case jvm.Binary(type=jvm.Int(), operant=opr_type):
             new_state = state.copy()
             v2 = new_state.stack.pop()
@@ -167,23 +176,14 @@ def step(pc: PC, state: SymState) -> Iterable[tuple[PC, SymState, SymPath]]:
                 case jvm.BinaryOpr.Mul:
                     result_expr = z3_v1 * z3_v2
                 case jvm.BinaryOpr.Div:
-                    # Division by zero check - return two paths
-                    # Path 1: division by zero error
-                    state_error = new_state.copy()
-                    path_div_zero = [z3_v2 == 0]
-                    
-                    # Path 2: successful division
+                    # Path 1: successful division
                     state_ok = new_state.copy()
                     result_expr = z3_v1 / z3_v2
                     state_ok.stack.push(SymValue(result_expr))
                     path_ok = [z3_v2 != 0]
                     
-                    return [
-                        (PC(pc.method, pc.offset + 1), state_ok, path_ok),
-                        # Error state - special PC to indicate error
-                    ]
+                    return [(PC(pc.method, pc.offset + 1), state_ok, path_ok)]
                 case jvm.BinaryOpr.Rem:
-                    # Similar to division - check for zero
                     state_ok = new_state.copy()
                     result_expr = z3_v1 % z3_v2
                     state_ok.stack.push(SymValue(result_expr))
@@ -199,7 +199,6 @@ def step(pc: PC, state: SymState) -> Iterable[tuple[PC, SymState, SymPath]]:
             v = state.stack.pop()
             z3_v = to_z3_expr(v)
             
-            # Create two branches: one where condition is true, one where false
             state_true = state.copy()
             state_false = state.copy()
             
@@ -227,7 +226,6 @@ def step(pc: PC, state: SymState) -> Iterable[tuple[PC, SymState, SymPath]]:
             else:
                 raise NotImplementedError(f"Ifz condition {cond}")
             
-            # Return both branches
             return [
                 (PC(pc.method, target), state_true, [constraint_true]),
                 (PC(pc.method, pc.offset + 1), state_false, [constraint_false])
@@ -236,7 +234,7 @@ def step(pc: PC, state: SymState) -> Iterable[tuple[PC, SymState, SymPath]]:
         case jvm.If(condition=cond, target=target):
             v2 = state.stack.pop()
             v1 = state.stack.pop()
-            
+
             z3_v1 = to_z3_expr(v1)
             z3_v2 = to_z3_expr(v2)
             
@@ -276,13 +274,13 @@ def step(pc: PC, state: SymState) -> Iterable[tuple[PC, SymState, SymPath]]:
             # Terminal state - no next states
             return []
         
-        case jvm.Dup():
+        case jvm.Dup(words=1):
             new_state = state.copy()
             v = new_state.stack.peek()
             new_state.stack.push(v)
             return [(PC(pc.method, pc.offset + 1), new_state, [])]
 
-        case jvm.Store(type=jvm.Int(), index=i):
+        case jvm.Store(type=_, index=i):
             new_state = state.copy()
             v = new_state.stack.pop()
             new_state.locals[i] = v
@@ -290,34 +288,136 @@ def step(pc: PC, state: SymState) -> Iterable[tuple[PC, SymState, SymPath]]:
 
         case jvm.Incr(index=i, amount=a):
             new_state = state.copy()
-
             sym_val = new_state.locals[i]
             z3_old = to_z3_expr(sym_val)
-
-            # Compute new symbolic value
             z3_new = z3_old + a
-
-            # Store new symbolic value back
             new_state.locals[i] = SymValue(z3_new)
+            return [(PC(pc.method, pc.offset + 1), new_state, [])]
 
+        case jvm.Goto(target=t):
+            new_state = state.copy()
+            return [(PC(pc.method, t), new_state, [])]
+
+        case jvm.Get(static=True, field=f):
+            # For symbolic execution, we can treat static fields as symbolic values
+            new_state = state.copy()
+            # Create a symbolic variable for this static field
+            clean_name = f.fieldid.name.replace("$", "")
+            if clean_name == "assertionsDisabled":
+                return [(PC(pc.method, pc.offset + 2), new_state, [])]
+            field_var = z3.Int(f"field_{clean_name}")
+            new_state.stack.push(SymValue(field_var))
+            return [(PC(pc.method, pc.offset + 1), new_state, [])]
+
+        case jvm.Get(static=False, field=f):
+            # Get instance field
+            new_state = state.copy()
+            objref = new_state.stack.pop()
+            
+            # In symbolic execution, we need to handle this symbolically
+            # For now, create a symbolic variable representing the field value
+            field_var = z3.Int(f"field_{f.fieldid.name}")
+            new_state.stack.push(SymValue(field_var))
+            return [(PC(pc.method, pc.offset + 1), new_state, [])]
+
+        case jvm.Put(static=False, field=f):
+            # Put instance field
+            new_state = state.copy()
+            value = new_state.stack.pop()
+            objref = new_state.stack.pop()
+            # In symbolic execution, we track this as a heap update
+            # For simplicity, just continue without modeling heap deeply
+            return [(PC(pc.method, pc.offset + 1), new_state, [])]
+
+        case jvm.NewArray(type=t, dim=1):
+            # Create new array - in symbolic execution, create symbolic reference
+            new_state = state.copy()
+            size = new_state.stack.pop()
+            # Create a symbolic reference to the array
+            array_ref = z3.Int(f"array_ref_{pc.offset}")
+            new_state.stack.push(SymValue(array_ref))
+            return [(PC(pc.method, pc.offset + 1), new_state, [])]
+
+        case jvm.NewArray(type=t, dim=2):
+            # Create 2D array
+            new_state = state.copy()
+            d2 = new_state.stack.pop()
+            d1 = new_state.stack.pop()
+            # Create symbolic reference
+            array_ref = z3.Int(f"matrix_ref_{pc.offset}")
+            new_state.stack.push(SymValue(array_ref))
+            return [(PC(pc.method, pc.offset + 1), new_state, [])]
+
+        case jvm.ArrayStore(type=t):
+            # Store value into array
+            new_state = state.copy()
+            value = new_state.stack.pop()
+            index = new_state.stack.pop()
+            arrayref = new_state.stack.pop()
+            # In symbolic execution, we would model this as a heap update
+            # For now, just continue
+            return [(PC(pc.method, pc.offset + 1), new_state, [])]
+
+        case jvm.ArrayLoad(type=t):
+            # Load value from array
+            new_state = state.copy()
+            index = new_state.stack.pop()
+            arrayref = new_state.stack.pop()
+            # Create symbolic value for array element
+            elem_var = z3.Int(f"array_elem_{pc.offset}")
+            new_state.stack.push(SymValue(elem_var))
+            return [(PC(pc.method, pc.offset + 1), new_state, [])]
+
+        case jvm.ArrayLength():
+            # Get array length
+            new_state = state.copy()
+            arrayref = new_state.stack.pop()
+            # Create symbolic length
+            length_var = z3.Int(f"array_length_{pc.offset}")
+            new_state.stack.push(SymValue(length_var))
+            return [(PC(pc.method, pc.offset + 1), new_state, [])]
+
+        case jvm.New(classname=cn):
+            # Create new object
+            new_state = state.copy()
+            # Create symbolic reference to the object
+            obj_ref = z3.Int(f"obj_ref_{cn.name}_{pc.offset}")
+            new_state.stack.push(SymValue(obj_ref))
+            return [(PC(pc.method, pc.offset + 1), new_state, [])]
+
+        case jvm.InvokeStatic(method=m) | jvm.InvokeVirtual(method=m) | jvm.InvokeSpecial(method=m, is_interface=_):
+            # For symbolic execution, we can either:
+            # 1. Inline the method call (recursive symbolic execution)
+            # 2. Create symbolic return value (approximation)
+            # For now, use option 2 for simplicity
+            new_state = state.copy()
+            
+            # # Pop arguments
+            # num_args = len(m.methodid.params)
+            # if not isinstance(opr, jvm.InvokeStatic):
+            #     num_args += 1  # Include 'this' reference
+            #
+            # for _ in range(num_args):
+            #     new_state.stack.pop()
+            #
+            # If method has return type, push symbolic return value
+            # if m.methodid.returntype is not None and m.methodid.returntype != jvm.Void():
+            #     ret_var = z3.Int(f"ret_{m.methodid.name}_{pc.offset}")
+            #     new_state.stack.push(SymValue(ret_var))
+            
+            return [(PC(pc.method, pc.offset + 1), new_state, [])]
+
+        case jvm.Cast(from_=f, to_=t):
+            # Type cast - in symbolic execution, preserve the symbolic value
+            new_state = state.copy()
+            value = new_state.stack.pop()
+            new_state.stack.push(value)  # Keep same symbolic value
             return [(PC(pc.method, pc.offset + 1), new_state, [])]
 
         case _:
             # For unimplemented operations, just advance PC
             logger.warning(f"Unimplemented symbolic operation: {opr}")
             return [(PC(pc.method, pc.offset + 1), state.copy(), [])]
-
-
-def interesting(state: SymState, path: SymPath) -> str | None:
-    """
-    Check if the state represents an interesting condition to report.
-    Returns a description if interesting, None otherwise.
-    """
-    # Example: Check if we can reach a state with specific properties
-    # This is where you'd add your analysis logic
-    
-    # For now, just return None (no interesting states found)
-    return None
 
 
 def analyse(pc: PC, inputs: list[tuple[str, jvm.Type]], max_depth: int) -> list[str]:
@@ -332,11 +432,11 @@ def analyse(pc: PC, inputs: list[tuple[str, jvm.Type]], max_depth: int) -> list[
     Returns:
         Analysis result string
     """
+
     # Create symbolic variables for all inputs (assuming integers)
     var_names = [name for name, _ in inputs]
     symbolic_vars = z3.Ints(" ".join(var_names))
     
-
     # Create initial symbolic locals
     locals_dict = {i: var for i, var in enumerate(symbolic_vars)}
     state = SymState.from_locals(locals_dict)
@@ -351,18 +451,14 @@ def analyse(pc: PC, inputs: list[tuple[str, jvm.Type]], max_depth: int) -> list[
         
         logger.debug(f"Exploring: {current_pc} at depth {n}")
         
-        # Check if state is interesting
-        issue = interesting(current_state, path)
-        if issue:
-            return f"found interesting state: {issue}"
-        
         # Generate next states
         try:
             next_states = step(current_pc, current_state)
         except Exception as e:
             logger.warning(f"Error during step: {e}")
+            raise ValueError(f"Symbolic Interpreter error: {e} in {bc[current_pc]}")
             continue
-        
+
         for (next_pc, next_state, path_constraints) in next_states:
             # Add new path constraints
             new_path = path + path_constraints
@@ -387,6 +483,7 @@ def analyse(pc: PC, inputs: list[tuple[str, jvm.Type]], max_depth: int) -> list[
             else:
                 logger.debug(f"Reached max depth at {next_pc}")
 
+    # print(f"BRANCHES \n{branches}")
     return branches
 
 if __name__ == "__main__":

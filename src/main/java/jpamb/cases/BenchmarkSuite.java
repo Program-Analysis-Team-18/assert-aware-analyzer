@@ -40,16 +40,26 @@ public class BenchmarkSuite {
         assert state++ == 7;
     }
 
-    @Tag({ SIDE_EFFECT_ASSERT })
-    public static void assertArrayWrite(int[] arr) {
-        assert (arr[0] = 9) == 9;
-    }
+    // @Tag({ SIDE_EFFECT_ASSERT })
+    // public static void assertArrayWrite(int[] arr) {
+    //     arr[0] = 9;
+    //     // assert arr[0] == 9;
+    // }
 
     @Tag({ USELESS_ASSERT })
     public static void divideByN(int x, int n) {
-        assert n != 10;
+        assert n != 12;
 
         int result = x / n;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void divideByNMinus12(int x, int n) {
+        assert n != 0;
+
+        if (x == 10) {
+            int result = x / (n - 12);
+        }
     }
 
     // ===================
@@ -160,7 +170,6 @@ public class BenchmarkSuite {
         // ... more stuff ...
     }
 
-
     //start gemini cases 
     
     @Tag({ USEFUL_ASSERT })
@@ -199,9 +208,10 @@ public class BenchmarkSuite {
         int res = 100 / s.get();
     }
 
-    @Tag({ USEFUL_ASSERT })
+    @Tag({ USEFUL_ASSERT, USELESS_ASSERT })
     public static void nestedArrayAccess(PositiveInteger index, PositiveInteger size) {
         assert index.get() < size.get();
+        assert index.get() < size.get() - 10;
         int[][] matrix = new int[size.get()][size.get()];
         matrix[index.get()][0] = 1;
     }
@@ -226,12 +236,12 @@ public class BenchmarkSuite {
         assert (arr[0]++) > 0;
     }
 
-    @Tag({ USEFUL_ASSERT })
+    @Tag({ USEFUL_ASSERT, USELESS_ASSERT })
     public static void complexMath(PositiveInteger a, PositiveInteger b) {
         // a, b >= 0
-        // prevent overflow or something?
         // simple div by zero
         assert a.get() + b.get() != 0;
+        assert a.get() + b.get() == 100; // useless
         int x = 100 / (a.get() + b.get());
     }
 
@@ -245,9 +255,10 @@ public class BenchmarkSuite {
         assert a.get() + 1 < 0;
     }
 
-    @Tag({ USEFUL_ASSERT })
+    @Tag({ USEFUL_ASSERT, USELESS_ASSERT })
     public static void loopBound(PositiveInteger limit) {
-        assert limit.get() < 100;
+        assert limit.get() < 100; // useful
+        assert limit.get() < 5; // useless
         int[] arr = new int[100];
         for(int i=0; i<=limit.get(); i++) {
             arr[i] = i;
@@ -266,7 +277,125 @@ public class BenchmarkSuite {
         }
     }
 
-    // end gemini cases 
+    // end gemini cases
+
+    //start claude cases - for assertion rewriting:
+    @Tag({ USELESS_ASSERT })
+    public static void divideByPositive(int x, int n) {
+        assert x == 2;
+
+    if (n > 0) {
+        int result = x / n;
+    }
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void calculateRatio(int numerator, int denominator) {
+        assert numerator == 2;
+
+        int ratio = numerator / denominator;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void processValue(int value, int divisor) {
+        assert value == 2;
+
+        if (value > 100) {
+            divisor = divisor + 5;
+        }
+        int result = value / divisor;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void computeWithCondition(int a, int b) {
+        assert a == 2;
+
+        if (a != 0) {
+            int temp = 100 / a;
+        }
+        int result = a / b;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void nestedDivision(int x, int y, int z) {
+        assert x == 2;
+
+        if (x > 10) {
+            if (y != 0) {
+                int first = x / y;
+            }
+        }
+        int second = x / z;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void arrayAccess(int[] arr, int index) {
+        assert index == 2;
+
+        if (index >= 0) {
+            int value = arr[index];
+        }
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void multipleOperations(int a, int b, int c) {
+        assert a == 2;
+
+        int result1 = a / b;
+        int result2 = b / c;
+        int result3 = a / c;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void conditionalDivision(int x, int y) {
+        assert x == 10;
+
+        if (x % 2 == 0) {
+            int result = x / y;
+        } else {
+            int result = y / x;
+        }
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void loopWithDivision(int n, int divisor) {
+        assert n == 2;
+
+        for (int i = 0; i < n; i++) {
+            int result = i / divisor;
+        }
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void arrayIndexCalculation(int[] data, int size, int index) {
+        assert index == 2;
+
+        if (size > 0) {
+            int normalizedIndex = index / size;
+            int value = data[normalizedIndex];
+        }
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void convertCharToIndex(char c, int divisor) {
+        assert divisor == 2;
+
+        int charValue = (int) c;
+        int index = charValue / divisor;
+    }
+
+    @Tag({ USELESS_ASSERT })
+    public static void processCharRange(char start, char end, int step) {
+    assert start == 2;
     
+    int range = end - start;
+    int segments = range / step;
+    
+    for (int i = 0; i < segments; i++) {
+        char current = (char) (start + i * step);
+    }
+    }
+
+    //end claude cases
 
 }
