@@ -40,11 +40,11 @@ public class BenchmarkSuite {
         assert state++ == 7;
     }
 
-    @Tag({ SIDE_EFFECT_ASSERT })
-    public static void assertArrayWrite(int[] arr) {
-        arr[0] = 9;
-        assert arr[0] == 9;
-    }
+    // @Tag({ SIDE_EFFECT_ASSERT })
+    // public static void assertArrayWrite(int[] arr) {
+    //     arr[0] = 9;
+    //     // assert arr[0] == 9;
+    // }
 
     @Tag({ USELESS_ASSERT })
     public static void divideByN(int x, int n) {

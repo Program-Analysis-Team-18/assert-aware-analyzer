@@ -102,8 +102,8 @@ def run(Syntatic_analysis_enabled=True, Assetion_solver_enabled=True, Dynamic_an
 
 if __name__ == "__main__":
     Syntatic_analysis_enabled = True
-    Assetion_solver_enabled = False
-    Dynamic_analysis_enabled = False
+    Assetion_solver_enabled = True
+    Dynamic_analysis_enabled = True
 
     Symbolic_execution_enabled = True
     run(Syntatic_analysis_enabled, Assetion_solver_enabled, Dynamic_analysis_enabled, Symbolic_execution_enabled)

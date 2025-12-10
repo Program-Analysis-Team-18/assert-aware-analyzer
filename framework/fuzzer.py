@@ -390,9 +390,9 @@ class Fuzzer:
 # method_id = "jpamb.cases.BenchmarkSuite.safeArrayAccessNested:(Ljpamb/utils/PositiveInteger<init>I;I)V"
 # method_id = "jpamb.cases.BenchmarkSuite.incr:(I)I"
 # method_id = "jpamb.cases.BenchmarkSuite.divideByNMinus12:(II)V"
-method_id = "jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V"
-fuzzer = Fuzzer(method_id, fuzz_for=10000, symbolic_corpus=True)
-# print(fuzzer.random_input())
-fuzzer.fuzz()
-# print(fuzzer._run([10,12], False).message)
-print(fuzzer.wrong_inputs)
+# method_id = "jpamb.cases.BenchmarkSuite.balanceLoad:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V"
+# fuzzer = Fuzzer(method_id, fuzz_for=10000, symbolic_corpus=True)
+# # print(fuzzer.random_input())
+# fuzzer.fuzz()
+# # print(fuzzer._run([10,12], False).message)
+# print(fuzzer.wrong_inputs)

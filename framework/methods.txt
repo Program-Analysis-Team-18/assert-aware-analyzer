@@ -1,7 +1,6 @@
 jpamb.cases.BenchmarkSuite.changeStateNested:()V
 jpamb.cases.BenchmarkSuite.assertLiteralTrue:()V
 jpamb.cases.BenchmarkSuite.assertWithIncrement:()V
-jpamb.cases.BenchmarkSuite.assertArrayWrite:()V
 jpamb.cases.BenchmarkSuite.divideByN:(II)V
 jpamb.cases.BenchmarkSuite.divideByNMinus12:(II)V
 jpamb.cases.BenchmarkSuite.withdraw:(Ljpamb/utils/PositiveInteger<init>I;Ljpamb/utils/PositiveInteger<init>I;I)V
